@@ -87,7 +87,7 @@ func main() {
 	case *uploadLocalFile != "":
 		taskName = TypeUploadFile
 	default:
-		panic("Operation is not defined - please use --help ")
+		logHelper.ErrFatalWithMessage("Operation is not defined - please use --help ", errors.New(""))
 	}
 
 	config := configProvider.GetConfig(jsonFileName)
@@ -146,7 +146,7 @@ func main() {
 			case TypeUploadFile:
 				go uploadFile(task, tasksChannel)
 			default:
-				panic(fmt.Sprintf("unknown task type task.Type=%v", task.Type))
+				logHelper.ErrFatalWithMessage(fmt.Sprintf("unknown task type task.Type=%v", task.Type), errors.New(""))
 			}
 		}
 		if count >= numberOfServers {
