@@ -78,28 +78,37 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
 	if serverConf.BastionServer != "" {
+
 		var hostKey ssh.PublicKey
-		// A public key may be used to authenticate against the remote
-		// server by using an unencrypted PEM-encoded private key file.
-		//
-		// If you have an encrypted private key, the crypto/x509 package
-		// can be used to decrypt it.
-		key, err := ioutil.ReadFile(serverConf.BastionIdentityFile)
-		if err != nil {
-			logHelper.ErrFatalWithMessage("unable to read private key", err)
-		}
-		// Create the Signer for this private key.
-		signer, err := ssh.ParsePrivateKey(key)
-		if err != nil {
-			logHelper.ErrFatalWithMessage("unable to parse private key", err)
+		var authMethod []ssh.AuthMethod
+
+		if serverConf.BastionIdentityFile != "" {
+			// A public key may be used to authenticate against the remote
+			// server by using an unencrypted PEM-encoded private key file.
+			//
+			// If you have an encrypted private key, the crypto/x509 package
+			// can be used to decrypt it.
+			key, err := ioutil.ReadFile(serverConf.BastionIdentityFile)
+			if err != nil {
+				logHelper.ErrFatalWithMessage("unable to read private key", err)
+			}
+			// Create the Signer for this private key.
+			signer, err := ssh.ParsePrivateKey(key)
+			if err != nil {
+				logHelper.ErrFatalWithMessage("unable to parse private key", err)
+			}
+			authMethod = []ssh.AuthMethod{
+				ssh.PublicKeys(signer),
+			}
+		} else {
+			authMethod = []ssh.AuthMethod{
+				ssh.Password(serverConf.BastionPassword),
+			}
 		}
 
 		sshConfigBastion := &ssh.ClientConfig{
-			User: serverConf.BastionLogin,
-			Auth: []ssh.AuthMethod{
-				// Use the PublicKeys method for remote authentication.
-				ssh.PublicKeys(signer),
-			},
+			User:            serverConf.BastionLogin,
+			Auth:            authMethod,
 			HostKeyCallback: ssh.FixedHostKey(hostKey),
 			Timeout:         time.Minute * 5,
 		}

@@ -18,6 +18,7 @@ type ConfigServerType struct {
 	BastionServer       string
 	BastionLogin        string
 	BastionIdentityFile string
+	BastionPassword     string
 	IpAddresses         []string
 }
 type ConfigFileType struct {
