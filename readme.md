@@ -41,5 +41,57 @@ env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
 ./serversBulk --servers SERVER_GROUP_NAME -c ./config/serversBulk_config_SVT.json  -d ~/Downloads
 ```
 
-
+```
 ./serversBulk --servers SERVER_GROUP_NAME -e "curl -v -g http://localhost:8080/health"
+```
+
+## Config file examples
+### If connection should be performed via Bastion server
+#### Bastion server password authentication is used
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "BastionServer": "192.XXX.XXX.1",
+            "BastionLogin": "YourLoginforBastion",
+            "BastionPassword": "YourPasswordforBastion",
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
+
+#### Bastion server Public/Private Key File authentication is used
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "BastionServer": "192.XXX.XXX.1",
+            "BastionLogin": "YourLoginforBastion",
+            "BastionIdentityFile": "/Users/username/.ssh/key_rsa",
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
+
