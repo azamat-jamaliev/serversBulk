@@ -94,4 +94,24 @@ env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
     ]
 }
 ```
+### Config without Bastion server
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
 
