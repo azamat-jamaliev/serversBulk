@@ -69,14 +69,17 @@ func main() {
 
 	var taskName TaskType
 	jsonFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
-	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from TBAPI\n\tserevers you can use parameter: `--servers TBAPI` ")
+	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")
 	modifTime := flag.String("mtime", "-0.2", "same as mtime for 'find'")
-	grepFor := flag.String("s", "", "search string like in:\ngrep --color=auto -H -A2 -B4  \"search string\"")
-	executeCmd := flag.String("e", "", "execute given command:\nserversBulk --servers TBAPI -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get TBAPI health from all TBAPI nodes")
+	grepFor := flag.String("s", "", "search string like in:\ngrep --color=auto --mtime -0.2 -H -A2 -B4  \"search string\"")
+	executeCmd := flag.String("e", "", "execute given command:\nserversBulk --servers SERVER_GROUP_NAME -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get SERVER_GROUP_NAME health from all SERVER_GROUP_NAME nodes")
 	logDir := flag.String("d", "", "folder where log files should be downloaded")
 	uploadLocalFile := flag.String("u", "", "File which will be uploaded to /var/tmp to the target servers")
 	logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
+
+	color.New(color.FgYellow).Println("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
+
 	switch {
 	case *grepFor != "":
 		taskName = TypeGrepInLogs
@@ -233,7 +236,7 @@ func archiveGzip(task ServerTask, output chan<- ServerTask) {
 	tarGzNamefile := fmt.Sprintf("%s.gz", task.FileName)
 	task.ExecuteCmd = fmt.Sprintf("if test -f '%s'; then cd %s; tar cvzf %s %s ; rm %s;echo 'true';fi", task.FileName, path.Dir(tarGzNamefile), path.Base(tarGzNamefile), path.Base(task.FileName), task.FileName)
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
-	fmt.Printf("RESPONSE str [%s]\n", str)
+	logHelper.LogPrintf("RESPONSE str [%s]\n", str)
 
 	nextTask := TypeDownloadArchive
 	task.FileName = tarGzNamefile
@@ -241,7 +244,7 @@ func archiveGzip(task ServerTask, output chan<- ServerTask) {
 }
 func downloadZipLog(task ServerTask, output chan<- ServerTask) {
 	localZipFileName := path.Join(task.LogDir, path.Base(task.FileName))
-	fmt.Printf("DOWNLOADING file [%s] to [%s]\n", task.FileName, localZipFileName)
+	logHelper.LogPrintf("DOWNLOADING file [%s] to [%s]\n", task.FileName, localZipFileName)
 
 	sshAdv := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	defer sshAdv.Close()

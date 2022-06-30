@@ -14,7 +14,6 @@ import (
 )
 
 type SshAdvanced struct {
-	fileSftp       *sftp.File
 	clientSftp     *sftp.Client
 	client         *ssh.Client
 	bastionSrvConn *net.Conn
@@ -22,9 +21,6 @@ type SshAdvanced struct {
 }
 
 func (c *SshAdvanced) Close() {
-	// if c.fileSftp != nil {
-	// 	c.fileSftp.Close()
-	// }
 	if c.clientSftp != nil {
 		c.clientSftp.Close()
 	}
@@ -51,18 +47,6 @@ func (c *SshAdvanced) NewSftpClient() *sftp.Client {
 	c.clientSftp = sc
 	return c.clientSftp
 }
-
-// func (c *SshAdvanced) GetSftpFile(filePath string) *sftp.File {
-// 	// Note: SFTP To Go doesn't support O_RDWR mode
-// 	srcFile, err := c.newSftpClient().OpenFile(filePath, (os.O_RDONLY))
-// 	if err != nil {
-// 		logHelper.ErrFatalWithMessage(
-// 			fmt.Sprintf("Unable to open file=[%s] on server=[%s]", filePath, c.client.RemoteAddr().String()),
-// 			err)
-// 	}
-// 	c.fileSftp = srcFile
-// 	return c.fileSftp
-// }
 
 func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string) *SshAdvanced {
 	logHelper.LogPrintf("OpenSshAdvanced connect to server:[%s]\n", server)
@@ -143,11 +127,5 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 		}
 	}
 
-	// // defer conn.Close()
-	// if needSession {
-	// 	session, _ := conn.NewSession()
-	// 	// defer session.Close()
-	// 	return conn, session
-	// }
 	return &sshAdvanced
 }

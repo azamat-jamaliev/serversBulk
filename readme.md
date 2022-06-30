@@ -1,5 +1,9 @@
 # serversBulk
-The tool for quick serach in the logs of different nodes and servers when Grafana is not available
+The serversBulk allows to 
+- quick serach in the logs of different nodes and servers when Grafana is not available :-) 
+- download all logs
+- upload filed 
+- and execute commands on the servers simalteniusly when Ansible is not available.
 
 ## Build
 
@@ -26,7 +30,7 @@ env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
 ## Execute
 ### to execute command
 ```
- .\serversBulk.exe -c C:\Users\azia0416\Seafile\Rakuten\HA_stream\serversBulk\build\config\win_serversBulk_config_PPT.json --servers TBAPI -e "http://[::]:28080/api/v1/catalogManagement/productOffering/50150271"
+ .\serversBulk.exe -c .\win_serversBulk_config_PPT.json --servers SERVER_GROUP_NAME -e "ls -l /var/tmp"
 ```
 ### for search
 ```
@@ -34,8 +38,8 @@ env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
 ```
 ### for logs download
 ```
-./serversBulk --servers TBAPI -c ./config/serversBulk_config_SVT.json  -d ~/Downloads
+./serversBulk --servers SERVER_GROUP_NAME -c ./config/serversBulk_config_SVT.json  -d ~/Downloads
 ```
 
 
-./serversBulk --servers TBAPI -e "curl -v -g http://localhost:28080/api/v1/monitoring/health"
+./serversBulk --servers SERVER_GROUP_NAME -e "curl -v -g http://localhost:8080/health"
