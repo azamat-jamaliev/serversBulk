@@ -66,6 +66,7 @@ func main() {
 	logHelper.LogPrintln("********************************************************************************")
 	logHelper.LogPrintln("*                           ServersBulk                                        *")
 	logHelper.LogPrintln("********************************************************************************")
+	logHelper.LogPrintln("see source code in: https://github.com/azamat-jamaliev/serversBulk")
 
 	var taskName TaskType
 	jsonFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
