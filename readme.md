@@ -41,5 +41,80 @@ env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
 ./serversBulk --servers SERVER_GROUP_NAME -c ./config/serversBulk_config_SVT.json  -d ~/Downloads
 ```
 
+### upload file to servers
+```
+./serversBulk -c ./config/serversBulk_config_SVT.json  -u ~/Downloads/file_to_upload.txt
+```
+__NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist uploading will fail for the server)
 
-./serversBulk --servers SERVER_GROUP_NAME -e "curl -v -g http://localhost:8080/health"
+
+## Config file examples
+### If connection should be performed via Bastion server
+#### Bastion server password authentication is used
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "BastionServer": "192.XXX.XXX.1",
+            "BastionLogin": "YourLoginforBastion",
+            "BastionPassword": "YourPasswordforBastion",
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
+
+#### Bastion server Public/Private Key File authentication is used
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "BastionServer": "192.XXX.XXX.1",
+            "BastionLogin": "YourLoginforBastion",
+            "BastionIdentityFile": "/Users/username/.ssh/key_rsa",
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
+### Config without Bastion server
+```yaml
+{
+    "servers": [
+        {
+            "name": "SERVER_GROUP_NAME",
+            "description": "",
+            "logFolder": "/var/tmp/logs",
+            "logFilePattern": "*.log",
+            "searchInSubfolders": true,
+            "login": "YourLoginToTheServerGroup",
+            "passowrd": "YourLoginToTheServerGroup",
+            "ipAddresses": [
+                "172.XXX.XXX.XX1",
+                "172.XXX.XXX.XX2"
+            ]
+        }
+    ]
+}
+```
+
