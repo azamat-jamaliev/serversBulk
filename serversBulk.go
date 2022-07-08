@@ -245,17 +245,18 @@ func archiveGzip(task ServerTask, output chan<- ServerTask) {
 }
 func downloadZipLog(task ServerTask, output chan<- ServerTask) {
 	localZipFileName := path.Join(task.LogDir, path.Base(task.FileName))
-	logHelper.LogPrintf("DOWNLOADING file [%s] to [%s]\n", task.FileName, localZipFileName)
 
 	sshAdv := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	defer sshAdv.Close()
 	sftpClient := sshAdv.NewSftpClient()
+
+	logHelper.LogPrintf("Open file [%s] on server [%s]\n", task.FileName, task.Server)
 	srcFile, err := sftpClient.OpenFile(task.FileName, (os.O_RDONLY))
 	if err != nil {
 		output <- *taskForChannel(&task, "Unable to download file", err, Finished, nil)
 		return
 	}
-
+	logHelper.LogPrintf("Create file [%s]\n", task.FileName, localZipFileName)
 	dstFile, err := os.Create(localZipFileName)
 	if err != nil {
 		output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file [%s]", localZipFileName), err, Finished, nil)
@@ -263,6 +264,7 @@ func downloadZipLog(task ServerTask, output chan<- ServerTask) {
 	}
 	defer dstFile.Close()
 
+	logHelper.LogPrintf("DOWNLOADING file [%s] to [%s]\n", task.FileName, localZipFileName)
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
 		output <- *taskForChannel(&task, fmt.Sprintf("Unable to copy file [%s] to [%s]", task.FileName, localZipFileName), err, Finished, nil)

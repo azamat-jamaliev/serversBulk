@@ -119,7 +119,6 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 		sshAdvanced.client = ssh.NewClient(connCtoC, chans, reqs)
 		// sClient is an ssh client connected to the service host, through the bastion host.
 	} else {
-		logHelper.LogPrintf("connect to ssh server: %s", server)
 		var e error
 		sshAdvanced.client, e = ssh.Dial("tcp", fmt.Sprintf("%s:22", server), sshConfig)
 		if e != nil {
