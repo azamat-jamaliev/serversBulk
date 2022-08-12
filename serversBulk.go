@@ -294,5 +294,5 @@ func uploadFile(task ServerTask, output chan<- ServerTask) {
 	defer srcFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
-	output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file[%s]", destFilePath), err, Finished, nil)
+	output <- *taskForChannel(&task, fmt.Sprintf("File on remote server[%s]", destFilePath), err, Finished, nil)
 }
