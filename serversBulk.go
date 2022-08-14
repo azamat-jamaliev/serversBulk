@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"serversBulk/modules/configProvider"
 	"serversBulk/modules/logHelper"
@@ -17,9 +19,9 @@ import (
 )
 
 type CurrentFileForDownloading struct {
-	Server       string
-	FileName     string
-	ConfigServer configProvider.ConfigServerType
+	Server         string
+	RemoteFileName string
+	ConfigServer   configProvider.ConfigServerType
 	// SshConfig    *ssh.ClientConfig
 	Error error
 }
@@ -45,21 +47,27 @@ const (
 )
 
 type ServerTask struct {
-	Type            TaskType
-	Status          TaskStatus
-	FileName        string
-	Log             string
-	JsonFileName    string
-	ServersName     string
-	ModifTime       string
-	GrepFor         string
-	ExecuteCmd      string
-	LogDir          string
-	UploadLocalFile string
-	LogFilePattern  string
-	ConfigServer    configProvider.ConfigServerType
-	Server          string
-	Error           error
+	Type           TaskType
+	Status         TaskStatus
+	RemoteFileName string
+	Log            string
+	ConfigFileName string
+	ServersName    string
+	ModifTime      string
+	GrepFor        string
+	ExecuteCmd     string
+	//LocalDir - for dwnloading files
+	LocalDir       string
+	LocalFile      string
+	LogFilePattern string
+	ConfigServer   configProvider.ConfigServerType
+	Server         string
+	Error          error
+}
+type FileSizeInfo struct {
+	FileName string
+	Server   string
+	FileSize int64
 }
 
 func main() {
@@ -69,12 +77,12 @@ func main() {
 	logHelper.LogPrintln("see source code in: https://github.com/azamat-jamaliev/serversBulk")
 
 	var taskName TaskType
-	jsonFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
+	configFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
 	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")
 	modifTime := flag.String("mtime", "-0.2", "same as mtime for 'find'")
 	grepFor := flag.String("s", "", "search string like in:\ngrep --color=auto --mtime -0.2 -H -A2 -B4  \"search string\"")
 	executeCmd := flag.String("e", "", "execute given command:\nserversBulk --servers SERVER_GROUP_NAME -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get SERVER_GROUP_NAME health from all SERVER_GROUP_NAME nodes")
-	logDir := flag.String("d", "", "folder where log files should be downloaded")
+	localDir := flag.String("d", "", "folder where log files should be downloaded")
 	uploadLocalFile := flag.String("u", "", "File which will be uploaded to /var/tmp to the target servers")
 	logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
@@ -86,15 +94,15 @@ func main() {
 		taskName = TypeGrepInLogs
 	case *executeCmd != "":
 		taskName = TypeExecuteCommand
-	case *logDir != "":
+	case *localDir != "":
 		taskName = TypeArchiveLogs
 	case *uploadLocalFile != "":
 		taskName = TypeUploadFile
 	default:
-		logHelper.ErrFatalWithMessage("Operation is not defined - please use --help ", errors.New(""))
+		logHelper.ErrFatalln(errors.New(""), "Operation is not defined - please use --help ")
 	}
 
-	config := configProvider.GetConfig(jsonFileName)
+	config := configProvider.GetConfig(configFileName)
 
 	numberOfServers := 0
 	tasksChannel := make(chan ServerTask) //, numberOfServers)
@@ -107,17 +115,17 @@ func main() {
 			for _, serverIp := range serverConf.IpAddresses {
 				go func(serverIp string, serverConf configProvider.ConfigServerType) {
 					task := ServerTask{Status: Planned,
-						Type:            taskName,
-						JsonFileName:    *jsonFileName,
-						ServersName:     *serversName,
-						ModifTime:       *modifTime,
-						GrepFor:         *grepFor,
-						ExecuteCmd:      *executeCmd,
-						LogDir:          *logDir,
-						UploadLocalFile: *uploadLocalFile,
-						LogFilePattern:  *logFilePattern,
-						ConfigServer:    serverConf,
-						Server:          serverIp}
+						Type:           taskName,
+						ConfigFileName: *configFileName,
+						ServersName:    *serversName,
+						ModifTime:      *modifTime,
+						GrepFor:        *grepFor,
+						ExecuteCmd:     *executeCmd,
+						LocalDir:       *localDir,
+						LocalFile:      *uploadLocalFile,
+						LogFilePattern: *logFilePattern,
+						ConfigServer:   serverConf,
+						Server:         serverIp}
 					tasksChannel <- task
 				}(serverIp, serverConf)
 
@@ -146,11 +154,11 @@ func main() {
 			case TypeArchiveGzip:
 				go archiveGzip(task, tasksChannel)
 			case TypeDownloadArchive:
-				go downloadZipLog(task, tasksChannel)
+				go downloadFile(task, tasksChannel)
 			case TypeUploadFile:
 				go uploadFile(task, tasksChannel)
 			default:
-				logHelper.ErrFatalWithMessage(fmt.Sprintf("unknown task type task.Type=%v", task.Type), errors.New(""))
+				logHelper.ErrFatalf(errors.New(""), "unknown task type task.Type=%v", task.Type)
 			}
 		}
 		if count >= numberOfServers {
@@ -181,7 +189,7 @@ func PrintTask(task *ServerTask) {
 		clr.Println(task.ExecuteCmd)
 		clr.Println(task.Error)
 	}
-	clr.Println(task.FileName)
+	clr.Println(task.RemoteFileName)
 	clr.Println(task.Log)
 	clr.Println("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
 }
@@ -207,7 +215,7 @@ func executeOnServer(serverConf *configProvider.ConfigServerType, server, cmd st
 	logHelper.LogPrintf("execute command:[%s] on ssh server:[%s]", cmd, server)
 	buff, e := sshAdv.NewSession().Output(cmd)
 	if e != nil {
-		logHelper.ErrLogWinMessage(fmt.Sprintf("error while executing cmd:[%s] os server [%s], cmd_output[%s]", cmd, server, buff), e)
+		logHelper.ErrLogf(e, "error while executing cmd:[%s] os server [%s], cmd_output[%s]", cmd, server, buff)
 	}
 	str := string(buff)
 	return str, e
@@ -220,7 +228,7 @@ func executeCommand(task ServerTask, output chan<- ServerTask) {
 
 // NOTE: output result is in the channel
 func grepInLogs(task ServerTask, output chan<- ServerTask) {
-	task.ExecuteCmd = fmt.Sprintf("find %s -type f -iname \"%s\" -mtime %s -exec grep --color=auto -H -A15 -B15 \"%s\" {}  \\;", task.ConfigServer.LogFolder, task.ConfigServer.LogFilePattern, task.ModifTime, task.GrepFor)
+	task.ExecuteCmd = fmt.Sprintf("find %s -type f -iname \"%s\" -mtime %s -exec grep --color=auto -H -A15 -B15 -i \"%s\" {}  \\;", task.ConfigServer.LogFolder, task.ConfigServer.LogFilePattern, task.ModifTime, task.GrepFor)
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
 	output <- *taskForChannel(&task, str, e, Finished, nil)
 }
@@ -230,52 +238,81 @@ func archiveLogs(task ServerTask, output chan<- ServerTask) {
 	str, e := executeOnServer(&task.ConfigServer, task.Server, cmd)
 
 	nextTask := TypeArchiveGzip
-	task.FileName = tarNamefile
+	task.RemoteFileName = tarNamefile
 	output <- *taskForChannel(&task, str, e, InProgress, &nextTask)
 }
 func archiveGzip(task ServerTask, output chan<- ServerTask) {
-	tarGzNamefile := fmt.Sprintf("%s.gz", task.FileName)
-	task.ExecuteCmd = fmt.Sprintf("if test -f '%s'; then cd %s; tar cvzf %s %s ; rm %s;echo 'true';fi", task.FileName, path.Dir(tarGzNamefile), path.Base(tarGzNamefile), path.Base(task.FileName), task.FileName)
+	tarGzNamefile := fmt.Sprintf("%s.gz", task.RemoteFileName)
+	task.ExecuteCmd = fmt.Sprintf("if test -f '%s'; then cd %s; tar cvzf %s %s ; rm %s;echo 'true';fi", task.RemoteFileName, path.Dir(tarGzNamefile), path.Base(tarGzNamefile), path.Base(task.RemoteFileName), task.RemoteFileName)
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
 	logHelper.LogPrintf("RESPONSE str [%s]\n", str)
 
 	nextTask := TypeDownloadArchive
-	task.FileName = tarGzNamefile
+	task.RemoteFileName = tarGzNamefile
+	task.LocalFile = path.Join(task.LocalDir, path.Base(task.RemoteFileName))
 	output <- *taskForChannel(&task, str, e, InProgress, &nextTask)
 }
-func downloadZipLog(task ServerTask, output chan<- ServerTask) {
-	localZipFileName := path.Join(task.LogDir, path.Base(task.FileName))
-
+func downloadFile(task ServerTask, output chan<- ServerTask) {
 	sshAdv := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	defer sshAdv.Close()
 	sftpClient := sshAdv.NewSftpClient()
+	fileProgress := make(chan FileSizeInfo)
+	defer close(fileProgress)
 
-	logHelper.LogPrintf("Open file [%s] on server [%s]\n", task.FileName, task.Server)
-	srcFile, err := sftpClient.OpenFile(task.FileName, (os.O_RDONLY))
+	logHelper.LogPrintf("Open file [%s] on server [%s]\n", task.RemoteFileName, task.Server)
+	srcFile, err := sftpClient.OpenFile(task.RemoteFileName, (os.O_RDONLY))
 	if err != nil {
 		output <- *taskForChannel(&task, "Unable to download file", err, Finished, nil)
 		return
 	}
-	logHelper.LogPrintf("Create file [%s]\n", task.FileName, localZipFileName)
-	dstFile, err := os.Create(localZipFileName)
+	fileInfo, _ := srcFile.Stat()
+
+	logHelper.LogPrintf("Create file [%s]\n", task.LocalFile)
+	dstFile, err := os.Create(task.LocalFile)
 	if err != nil {
-		output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file [%s]", localZipFileName), err, Finished, nil)
+		output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file [%s]", task.LocalFile), err, Finished, nil)
 		return
 	}
 	defer dstFile.Close()
 
-	logHelper.LogPrintf("DOWNLOADING file [%s] to [%s]\n", task.FileName, localZipFileName)
+	logHelper.LogPrintf("DOWNLOADING file[%s] Srv[%s] to[%s]\n", task.RemoteFileName, task.Server, task.LocalFile)
+	go printDownloadProgress(fileProgress)
+	fileProgress <- FileSizeInfo{FileName: task.LocalFile, Server: task.Server, FileSize: fileInfo.Size()}
+
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
-		output <- *taskForChannel(&task, fmt.Sprintf("Unable to copy file [%s] to [%s]", task.FileName, localZipFileName), err, Finished, nil)
+		output <- *taskForChannel(&task, fmt.Sprintf("Unable to copy file [%s] to [%s]", task.RemoteFileName, task.LocalFile), err, Finished, nil)
 		return
 	}
 
-	err = sftpClient.Remove(task.FileName)
+	err = sftpClient.Remove(task.RemoteFileName)
 	output <- *taskForChannel(&task, "", err, Finished, nil)
 }
+func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
+	// logHelper.LogPrintf("Create file [%s]\n", task.RemoteFileName, task.LocalFile)
+	// os.ReadDir(path.Dir(task.LocalFile))
+	logHelper.LogPrintln("in printDownloadProgress")
+	var fSize *FileSizeInfo
+	for {
+		select {
+		case f, ok := <-fileSizeInfo:
+			if !ok {
+				break
+			}
+			fSize = &f
+		case <-time.After(1 * time.Second):
+			if fSize != nil {
+				fileStat, err := os.Stat(fSize.FileName)
+				if err != nil {
+					logHelper.ErrLogf(err, "printDownloadProgress unable to get stat from file [%s]", fSize.FileName)
+				}
+				logHelper.LogPrintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize))/100, fSize.FileName)
+			}
+		}
+	}
+}
 func uploadFile(task ServerTask, output chan<- ServerTask) {
-	destFilePath := path.Join("/var/tmp/", path.Base(task.UploadLocalFile))
+	destFilePath := path.Join("/var/tmp/", path.Base(task.LocalFile))
 
 	sshAdv := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	defer sshAdv.Close()
@@ -286,13 +323,14 @@ func uploadFile(task ServerTask, output chan<- ServerTask) {
 		return
 	}
 
-	srcFile, err := os.Open(task.UploadLocalFile)
+	srcFile, err := os.Open(task.LocalFile)
 	if err != nil {
 		output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file[%s]", destFilePath), err, Finished, nil)
 		return
 	}
 	defer srcFile.Close()
 
+	logHelper.LogPrintf("UPLOADING file [%s] to [%s] on server [%s]\n", task.LocalFile, task.RemoteFileName, task.Server)
 	_, err = io.Copy(dstFile, srcFile)
 	output <- *taskForChannel(&task, fmt.Sprintf("File on remote server[%s]", destFilePath), err, Finished, nil)
 }

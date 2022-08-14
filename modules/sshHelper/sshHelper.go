@@ -74,12 +74,12 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 			// can be used to decrypt it.
 			key, err := ioutil.ReadFile(serverConf.BastionIdentityFile)
 			if err != nil {
-				logHelper.ErrFatalWithMessage("unable to read private key", err)
+				logHelper.ErrFatalln(err, "unable to read private key")
 			}
 			// Create the Signer for this private key.
 			signer, err := ssh.ParsePrivateKey(key)
 			if err != nil {
-				logHelper.ErrFatalWithMessage("unable to parse private key", err)
+				logHelper.ErrFatalln(err, "unable to parse private key")
 			}
 			authMethod = []ssh.AuthMethod{
 				ssh.PublicKeys(signer),
@@ -100,7 +100,7 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 		// connect to the bastion host
 		bastionConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", serverConf.BastionServer), sshConfigBastion)
 		if err != nil {
-			logHelper.ErrFatalWithMessage(fmt.Sprintf("Cannot connect to Bastion server: %s", serverConf.BastionServer), err)
+			logHelper.ErrFatalf(err, "Cannot connect to Bastion server: %s", serverConf.BastionServer)
 		}
 		sshAdvanced.bastionClient = bastionConn
 

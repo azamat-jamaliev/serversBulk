@@ -12,8 +12,12 @@ func ErrFatal(err error) {
 	redStr := boldRed.Sprintf("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\nFATAL ERROR: %s\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", err.Error())
 	panic(redStr)
 }
-func ErrFatalWithMessage(msg string, err error) {
-	color.Red("\n%s\n", msg)
+func ErrFatalln(err error, msg string) {
+	ErrFatalf(err, "%s", msg)
+}
+func ErrFatalf(err error, format string, v ...interface{}) {
+	newFmrt := fmt.Sprintf(format, v...)
+	color.Red("\n%s\n", newFmrt)
 	ErrFatal(err)
 }
 func ErrLog(err error) {
@@ -21,14 +25,17 @@ func ErrLog(err error) {
 	boldRed := red.Add(color.Bold)
 	boldRed.Printf("\nERROR: %s\n", err.Error())
 }
-func ErrLogWinMessage(msg string, err error) {
-	color.Yellow("\n%s\n", msg)
+func ErrLogln(err error, msg string) {
+	ErrLogf(err, "%s", msg)
+}
+func ErrLogf(err error, format string, v ...interface{}) {
+	newFmrt := fmt.Sprintf(format, v...)
+	color.Yellow("\n%s\n", newFmrt)
 	ErrLog(err)
 }
 func LogPrintln(message string) {
-	LogPrintf("%s", message)
+	LogPrintf("%s\n", message)
 }
 func LogPrintf(format string, v ...interface{}) {
-	newFmrt := fmt.Sprintf("%s\n", format)
-	fmt.Printf(newFmrt, v...)
+	fmt.Printf(format, v...)
 }
