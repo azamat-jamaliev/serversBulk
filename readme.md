@@ -2,7 +2,7 @@
 The serversBulk allows to 
 - quick serach in the logs of different nodes and servers when Grafana is not available :-) 
 - download all logs
-- upload filed 
+- upload file
 - and execute commands on the servers simalteniusly when Ansible is not available.
 
 ## Build
