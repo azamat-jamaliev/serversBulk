@@ -38,4 +38,5 @@ func LogPrintln(message string) {
 }
 func LogPrintf(format string, v ...interface{}) {
 	fmt.Printf(format, v...)
+	fmt.Println("")
 }

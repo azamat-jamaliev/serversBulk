@@ -233,7 +233,7 @@ func grepInLogs(task ServerTask, output chan<- ServerTask) {
 	output <- *taskForChannel(&task, str, e, Finished, nil)
 }
 func archiveLogs(task ServerTask, output chan<- ServerTask) {
-	tarNamefile := fmt.Sprintf("%s/%s.%s", task.ConfigServer.LogFolder, strings.ReplaceAll(task.Server, ".", "_"), "tar")
+	tarNamefile := fmt.Sprintf("~/%s.%s", strings.ReplaceAll(task.Server, ".", "_"), "tar")
 	cmd := fmt.Sprintf("cd %s; find ./ -type f -iname \"%s\" -mtime %s -exec tar rvf %s {} \\;", task.ConfigServer.LogFolder, task.ConfigServer.LogFilePattern, task.ModifTime, tarNamefile)
 	str, e := executeOnServer(&task.ConfigServer, task.Server, cmd)
 
@@ -243,7 +243,7 @@ func archiveLogs(task ServerTask, output chan<- ServerTask) {
 }
 func archiveGzip(task ServerTask, output chan<- ServerTask) {
 	tarGzNamefile := fmt.Sprintf("%s.gz", task.RemoteFileName)
-	task.ExecuteCmd = fmt.Sprintf("if test -f '%s'; then cd %s; tar cvzf %s %s ; rm %s;echo 'true';fi", task.RemoteFileName, path.Dir(tarGzNamefile), path.Base(tarGzNamefile), path.Base(task.RemoteFileName), task.RemoteFileName)
+	task.ExecuteCmd = fmt.Sprintf("if [ -e %s ]; then cd %s; tar cvzf %s %s ; rm %s;echo 'true';fi", task.RemoteFileName, path.Dir(tarGzNamefile), path.Base(tarGzNamefile), path.Base(task.RemoteFileName), task.RemoteFileName)
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
 	logHelper.LogPrintf("RESPONSE str [%s]\n", str)
 
@@ -260,9 +260,10 @@ func downloadFile(task ServerTask, output chan<- ServerTask) {
 	defer close(fileProgress)
 
 	logHelper.LogPrintf("Open file [%s] on server [%s]\n", task.RemoteFileName, task.Server)
-	srcFile, err := sftpClient.OpenFile(task.RemoteFileName, (os.O_RDONLY))
+	sftpClient.RemoveDirectory(path.Dir(task.RemoteFileName))
+	srcFile, err := sftpClient.OpenFile(path.Base(task.RemoteFileName), (os.O_RDONLY))
 	if err != nil {
-		output <- *taskForChannel(&task, "Unable to download file", err, Finished, nil)
+		output <- *taskForChannel(&task, "downloadFile - Unable to open remote file", err, Finished, nil)
 		return
 	}
 	fileInfo, _ := srcFile.Stat()
@@ -270,7 +271,7 @@ func downloadFile(task ServerTask, output chan<- ServerTask) {
 	logHelper.LogPrintf("Create file [%s]\n", task.LocalFile)
 	dstFile, err := os.Create(task.LocalFile)
 	if err != nil {
-		output <- *taskForChannel(&task, fmt.Sprintf("Unable to create file [%s]", task.LocalFile), err, Finished, nil)
+		output <- *taskForChannel(&task, fmt.Sprintf("downloadFile - Unable to create file [%s]", task.LocalFile), err, Finished, nil)
 		return
 	}
 	defer dstFile.Close()
@@ -285,7 +286,7 @@ func downloadFile(task ServerTask, output chan<- ServerTask) {
 		return
 	}
 
-	err = sftpClient.Remove(task.RemoteFileName)
+	err = sftpClient.Remove(path.Base(task.RemoteFileName))
 	output <- *taskForChannel(&task, "", err, Finished, nil)
 }
 func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {

@@ -15,6 +15,7 @@ type ConfigServerType struct {
 	SearchInSubfolders  bool
 	Login               string
 	Passowrd            string
+	IdentityFile        string
 	BastionServer       string
 	BastionLogin        string
 	BastionIdentityFile string

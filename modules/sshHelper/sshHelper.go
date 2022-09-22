@@ -48,15 +48,44 @@ func (c *SshAdvanced) NewSftpClient() *sftp.Client {
 	return c.clientSftp
 }
 
+func getSshSigner(identityFilePath string) ssh.Signer {
+	// serverConf.BastionIdentityFile
+	// A public key may be used to authenticate against the remote
+	// server by using an unencrypted PEM-encoded private key file.
+	//
+	// If you have an encrypted private key, the crypto/x509 package
+	// can be used to decrypt it.
+	key, err := ioutil.ReadFile(identityFilePath)
+	if err != nil {
+		logHelper.ErrFatalln(err, "unable to read private key")
+	}
+	// Create the Signer for this private key.
+	signer, err := ssh.ParsePrivateKey(key)
+	if err != nil {
+		logHelper.ErrFatalln(err, "unable to parse private key")
+	}
+
+	return signer
+}
+
 func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string) *SshAdvanced {
 	logHelper.LogPrintf("OpenSshAdvanced connect to server:[%s]\n", server)
 	sshAdvanced := SshAdvanced{}
 
-	sshConfig := &ssh.ClientConfig{
-		User: serverConf.Login,
-		Auth: []ssh.AuthMethod{
+	var srvAuthMethod []ssh.AuthMethod
+	if serverConf.IdentityFile != "" {
+		srvAuthMethod = []ssh.AuthMethod{
+			ssh.PublicKeys(getSshSigner(serverConf.IdentityFile)),
+		}
+	} else {
+		srvAuthMethod = []ssh.AuthMethod{
 			ssh.Password(serverConf.Passowrd),
-		},
+		}
+	}
+
+	sshConfig := &ssh.ClientConfig{
+		User:    serverConf.Login,
+		Auth:    srvAuthMethod,
 		Timeout: time.Minute * 5,
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
@@ -67,22 +96,8 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 		var authMethod []ssh.AuthMethod
 
 		if serverConf.BastionIdentityFile != "" {
-			// A public key may be used to authenticate against the remote
-			// server by using an unencrypted PEM-encoded private key file.
-			//
-			// If you have an encrypted private key, the crypto/x509 package
-			// can be used to decrypt it.
-			key, err := ioutil.ReadFile(serverConf.BastionIdentityFile)
-			if err != nil {
-				logHelper.ErrFatalln(err, "unable to read private key")
-			}
-			// Create the Signer for this private key.
-			signer, err := ssh.ParsePrivateKey(key)
-			if err != nil {
-				logHelper.ErrFatalln(err, "unable to parse private key")
-			}
 			authMethod = []ssh.AuthMethod{
-				ssh.PublicKeys(signer),
+				ssh.PublicKeys(getSshSigner(serverConf.BastionIdentityFile)),
 			}
 		} else {
 			authMethod = []ssh.AuthMethod{
