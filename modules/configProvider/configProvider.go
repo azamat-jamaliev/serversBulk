@@ -9,10 +9,8 @@ import (
 
 type ConfigServerType struct {
 	Name                string
-	Description         string
 	LogFolder           string
 	LogFilePattern      string
-	SearchInSubfolders  bool
 	Login               string
 	Passowrd            string
 	IdentityFile        string
@@ -22,11 +20,41 @@ type ConfigServerType struct {
 	BastionPassword     string
 	IpAddresses         []string
 }
-type ConfigFileType struct {
+type ConfigEnvironmentType struct {
+	Name    string //environment name
 	Servers []ConfigServerType
 }
+type ConfigFileType struct {
+	DownloadFolder      string
+	LogsMtime           float32
+	LogFolder           string
+	LogFilePattern      string
+	Login               string
+	Passowrd            string
+	IdentityFile        string
+	BastionServer       string
+	BastionLogin        string
+	BastionIdentityFile string
+	BastionPassword     string
+	Environments        []ConfigEnvironmentType
+}
 
-func GetConfig(jsonFileName *string) ConfigFileType {
+func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
+	logHelper.LogPrintf("loading environment configuration file [%s]", *jsonFileName)
+	jsonFile, err := os.Open(*jsonFileName)
+	if err != nil {
+		logHelper.ErrFatalln(err, "Cannot Open Environment file")
+	}
+
+	var config ConfigEnvironmentType
+	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
+	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
+		logHelper.ErrFatalln(err, "Cannot Parse Environment file")
+	}
+	logHelper.LogPrintf("Environment config loaded succesfully")
+	return config
+}
+func GetFileConfig(jsonFileName *string) ConfigFileType {
 	logHelper.LogPrintf("loading configuration file [%s]", *jsonFileName)
 	jsonFile, err := os.Open(*jsonFileName)
 	if err != nil {

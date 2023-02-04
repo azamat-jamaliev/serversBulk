@@ -65,7 +65,7 @@ func mainOld() {
 		logHelper.ErrFatalln(errors.New(""), "Operation is not defined - please use --help ")
 	}
 
-	config := configProvider.GetConfig(configFileName)
+	config := configProvider.GetEnvironemntConfig(configFileName)
 
 	numberOfServers := 0
 	tasksChannel := make(chan tasks.ServerTask) //, numberOfServers)

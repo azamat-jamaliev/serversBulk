@@ -2,20 +2,39 @@
 package main
 
 import (
+	"fmt"
 	"math"
+	"os"
+	"path"
+	"path/filepath"
+	"serversBulk/modules/configProvider"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
+const DEBUG_MODE = true
+
 func main() {
+	ex, err := os.Executable()
+
+	if err != nil {
+		panic(err)
+	}
+	configPath := filepath.Dir(ex)
+	if DEBUG_MODE {
+		configPath = "./build/config"
+	}
+	configPath = path.Join(configPath, "serversBulk_config.json")
+	fmt.Println(configPath)
+	config := configProvider.GetFileConfig(&configPath)
 
 	app := tview.NewApplication()
 	pages := tview.NewPages()
 	configDoneHandler := func() {
 		pages.SwitchToPage("Results")
 	}
-	pages.AddPage("Main", MainPage(app, configDoneHandler), true, true)
+	pages.AddPage("Main", MainPage(app, &config, configDoneHandler), true, true)
 	pages.AddPage("Results", ResultsPage(app), true, false)
 
 	if err := app.SetRoot(pages, true).EnableMouse(false).Run(); err != nil {
@@ -23,7 +42,7 @@ func main() {
 	}
 }
 
-func MainPage(app *tview.Application, doneHandler func()) tview.Primitive {
+func MainPage(app *tview.Application, config *configProvider.ConfigFileType, doneHandler func()) tview.Primitive {
 	var searchField, commandField, mtimeField *tview.InputField
 	var serversList, commandList *tview.List
 	var focusOrder []tview.Primitive
@@ -37,10 +56,6 @@ func MainPage(app *tview.Application, doneHandler func()) tview.Primitive {
 			SetText(text)
 	}
 
-	// newPrimitive("Main content")
-
-	// sideBar := newPrimitive("Side Bar")
-
 	grid := tview.NewGrid().
 		SetRows(2, 0).
 		SetColumns(30, 0).
@@ -48,33 +63,18 @@ func MainPage(app *tview.Application, doneHandler func()) tview.Primitive {
 		AddItem(newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available"), 0, 0, 1, 2, 0, 0, false)
 		// .AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
 
-	serversList = tview.NewList().AddItem("Server1", "12.123.123.123", 0, nil).
-		AddItem("Server2", "12.123.123.123", 0, nil).
-		AddItem("Server3", "12.123.123.123", 0, nil).
-		AddItem("Server4", "12.123.123.123", 0, nil).
-		AddItem("Server5", "12.123.123.123", 0, nil).
-		AddItem("Server6", "12.123.123.123", 0, nil).
-		AddItem("Server7", "12.123.123.123", 0, nil).
-		AddItem("Server8", "12.123.123.123", 0, nil).
-		AddItem("Server9", "12.123.123.123", 0, nil).
-		AddItem("Server10", "12.123.123.123", 0, nil).
-		AddItem("Server11", "12.123.123.123", 0, nil).
-		AddItem("Server12", "12.123.123.123", 0, nil).
-		AddItem("Server13", "12.123.123.123", 0, nil).
-		AddItem("Server14", "12.123.123.123", 0, nil).
-		AddItem("Server15", "12.123.123.123", 0, nil).
-		AddItem("Server16", "12.123.123.123", 0, nil).
-		AddItem("Server17", "12.123.123.123", 0, nil).
-		AddItem("Server18", "12.123.123.123", 0, nil).
-		AddItem("Server19", "12.123.123.123", 0, nil).
-		AddItem("Server20", "12.123.123.123", 0, nil).
-		AddItem("Server21", "12.123.123.123", 0, nil).
-		AddItem("Server221", "12.123.123.123", 0, nil).
-		AddItem("Server231", "12.123.123.123", 0, nil).
-		AddItem("Server241", "12.123.123.123", 0, nil).
-		AddItem("Server251", "12.123.123.123", 0, nil).
-		AddItem("Server261", "12.123.123.123", 0, nil).
-		AddItem("DB1", "321.321.321.321", 0, nil)
+	serversList = tview.NewList()
+	for _, env := range config.Environments {
+		serverLine := ""
+		for _, server := range env.Servers {
+			ipLine := ""
+			for _, ipAddr := range server.IpAddresses {
+				ipLine = fmt.Sprintf("%s %s", ipLine, ipAddr)
+			}
+			serverLine = fmt.Sprintf("%s %s=[%s]", serverLine, server.Name, ipLine)
+		}
+		serversList.AddItem(env.Name, serverLine, 0, nil)
+	}
 
 	searchField = tview.NewInputField().
 		SetLabel("Quick search: ").
@@ -133,7 +133,7 @@ func MainPage(app *tview.Application, doneHandler func()) tview.Primitive {
 		curAppFocus := app.GetFocus()
 		for i := 0; i < len(focusOrder); i++ {
 			if focusOrder[i] == curAppFocus {
-				if i == len(focusOrder)-1 {
+				if i+direction >= len(focusOrder) {
 					doneHandler()
 					return focusOrder[i]
 				}
