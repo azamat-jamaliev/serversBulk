@@ -8,8 +8,10 @@ import (
 
 func main() {
 	var serversSearch, commandField, mtimeField *tview.InputField
-	var serversList *tview.List
-	var commandList *tview.List
+	var serversList, commandList *tview.List
+	var focusOrder []tview.Primitive
+	var getNewFocus func(direction int) int
+	var updateCommandFields func(commandLabel, commandPlaceholder string)
 	//tview.NewFlex() - Add / remove from flex item in case of different options are selected
 
 	app := tview.NewApplication()
@@ -75,14 +77,22 @@ func main() {
 	mtimeField = tview.NewInputField().
 		SetLabel("Modified Time: ").
 		SetPlaceholder("").
+		SetAcceptanceFunc(tview.InputFieldFloat).
 		SetFieldWidth(5).SetText("-0.2")
 
 	commandList = tview.NewList().ShowSecondaryText(false).
 		AddItem("Download logs", "", 'd', func() {
-			// app.SetFocus(serversSearch)
+			updateCommandFields("download to: ", "C:\\temp or ~/Downloads")
+			app.SetFocus(focusOrder[getNewFocus(1)])
 		}).
-		AddItem("Execute command", "", 'e', nil).
-		AddItem("Search in logs", "", 's', nil).
+		AddItem("Execute command", "", 'e', func() {
+			updateCommandFields("command: ", "to execute on servers")
+			app.SetFocus(focusOrder[getNewFocus(1)])
+		}).
+		AddItem("Search in logs", "", 's', func() {
+			updateCommandFields("search: ", "text to grep on server")
+			app.SetFocus(focusOrder[getNewFocus(1)])
+		}).
 		AddItem("Quite", "", 'q', func() {
 			app.Stop()
 		})
@@ -98,31 +108,37 @@ func main() {
 	grid.AddItem(commandList, 1, 0, 1, 1, 0, 100, true).
 		AddItem(main, 1, 1, 1, 1, 0, 100, true)
 
-	findNewFocus := func(focusElements []tview.Primitive, currentFocus tview.Primitive, direction int) int {
-		for i := 0; i < len(focusElements); i++ {
-			if focusElements[i] == currentFocus {
+	focusOrder = []tview.Primitive{commandList,
+		commandField,
+		mtimeField,
+		serversSearch,
+		serversList,
+	}
+	getNewFocus = func(direction int) int {
+		curAppFocus := app.GetFocus()
+		for i := 0; i < len(focusOrder); i++ {
+			if focusOrder[i] == curAppFocus {
 				result := i + direction
-				if result >= len(focusElements) {
+				if result >= len(focusOrder) {
 					return 0
 				} else if result < 0 {
-					return len(focusElements) - 1
+					return len(focusOrder) - 1
 				}
 				return result
 			}
 		}
 		return 0
 	}
-	focusOrder := []tview.Primitive{commandList,
-		commandField,
-		mtimeField,
-		serversSearch,
-		serversList,
+	updateCommandFields = func(commandLabel, commandPlaceholder string) {
+		commandField.SetLabel(commandLabel)
+		commandField.SetPlaceholder(commandPlaceholder)
 	}
+
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
-			app.SetFocus(focusOrder[findNewFocus(focusOrder, app.GetFocus(), -1)])
-		} else if event.Key() == tcell.KeyEnter {
-			app.SetFocus(focusOrder[findNewFocus(focusOrder, app.GetFocus(), 1)])
+			app.SetFocus(focusOrder[getNewFocus(-1)])
+		} else if event.Key() == tcell.KeyEnter && app.GetFocus() != commandList {
+			app.SetFocus(focusOrder[getNewFocus(1)])
 		}
 		return event
 	})
