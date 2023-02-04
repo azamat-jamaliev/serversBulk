@@ -8,31 +8,36 @@ import (
 	"path"
 	"path/filepath"
 	"serversBulk/modules/configProvider"
+	"serversBulk/modules/tasks"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
-const DEBUG_MODE = true
+var app *tview.Application
+var serverLogView *tview.TextArea
+var serverStatusList *tview.List
+
+var ServerLog map[string]string
 
 func main() {
+	ServerLog = map[string]string{"": ""}
+	// ServerStatus = map[string]string{"": ""}
 	ex, err := os.Executable()
-
 	if err != nil {
 		panic(err)
 	}
 	configPath := filepath.Dir(ex)
-	if DEBUG_MODE {
-		configPath = "./build/config"
-	}
+	// configPath = "./build/config"
 	configPath = path.Join(configPath, "serversBulk_config.json")
 	fmt.Println(configPath)
 	config := configProvider.GetFileConfig(&configPath)
 
-	app := tview.NewApplication()
+	app = tview.NewApplication()
 	pages := tview.NewPages()
-	configDoneHandler := func() {
+	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
 		pages.SwitchToPage("Results")
+		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 	}
 	pages.AddPage("Main", MainPage(app, &config, configDoneHandler), true, true)
 	pages.AddPage("Results", ResultsPage(app), true, false)
@@ -41,20 +46,38 @@ func main() {
 		panic(err)
 	}
 }
+func ServerTaskStatusHandler(server, status string) {
+	if serverItems := serverStatusList.FindItems(server, "", false, false); len(serverItems) > 0 {
+		serverStatusList.SetItemText(serverItems[0], server, status)
+	} else {
+		serverStatusList.AddItem(server, status, 0, nil)
+	}
+}
+func ServerLogHandler(server, log string) {
+	val, ok := ServerLog[server]
+	if ok {
+		ServerLog[server] = fmt.Sprintf("%s\n%s", val, log)
+	} else {
+		ServerLog[server] = log
+	}
+	newText := fmt.Sprintf("%s\n%s", serverLogView.GetText(), log)
+	serverLogView.SetText(newText, true)
+	app.Draw()
+}
 
-func MainPage(app *tview.Application, config *configProvider.ConfigFileType, doneHandler func()) tview.Primitive {
+func newPrimitive(text string) tview.Primitive {
+	return tview.NewTextView().
+		SetTextAlign(tview.AlignCenter).
+		SetText(text)
+}
+
+func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
+	doneHandler func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string)) tview.Primitive {
 	var searchField, commandField, mtimeField *tview.InputField
 	var serversList, commandList *tview.List
+	var taskName tasks.TaskType
 	var focusOrder []tview.Primitive
 	var getNewFocusPrimitive func(direction int) tview.Primitive
-	var updateCommandFields func(commandLabel, commandPlaceholder string)
-	//tview.NewFlex() - Add / remove from flex item in case of different options are selected
-
-	newPrimitive := func(text string) tview.Primitive {
-		return tview.NewTextView().
-			SetTextAlign(tview.AlignCenter).
-			SetText(text)
-	}
 
 	grid := tview.NewGrid().
 		SetRows(2, 0).
@@ -94,18 +117,30 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType, don
 		SetPlaceholder("").
 		SetAcceptanceFunc(tview.InputFieldFloat).
 		SetFieldWidth(5).SetText("-0.2")
+	if config.LogsMtime != nil {
+		mtimeField.SetText(fmt.Sprintf("%v", *config.LogsMtime))
+	}
 
 	commandList = tview.NewList().ShowSecondaryText(false).
 		AddItem("Download logs", "", 'd', func() {
-			updateCommandFields("download to: ", "C:\\temp or ~/Downloads")
+			commandField.SetLabel("download to: ").SetPlaceholder("C:\\temp or ~/Downloads").
+				SetText(config.DownloadFolder)
+			taskName = tasks.TypeArchiveLogs
 			app.SetFocus(getNewFocusPrimitive(1))
 		}).
 		AddItem("Execute command", "", 'e', func() {
-			updateCommandFields("command: ", "to execute on servers")
+			commandField.SetLabel("command: ").SetPlaceholder("to execute on servers")
+			taskName = tasks.TypeExecuteCommand
 			app.SetFocus(getNewFocusPrimitive(1))
 		}).
 		AddItem("Search in logs", "", 's', func() {
-			updateCommandFields("search: ", "text to grep on server")
+			commandField.SetLabel("search: ").SetPlaceholder("text to grep on server")
+			taskName = tasks.TypeGrepInLogs
+			app.SetFocus(getNewFocusPrimitive(1))
+		}).
+		AddItem("Upload file", "", 's', func() {
+			commandField.SetLabel("file to upload: ").SetPlaceholder("C:\\temp\\1.zip or ~/Downloads/1.zip")
+			taskName = tasks.TypeUploadFile
 			app.SetFocus(getNewFocusPrimitive(1))
 		}).
 		AddItem("Quite", "", 'q', func() {
@@ -134,7 +169,11 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType, don
 		for i := 0; i < len(focusOrder); i++ {
 			if focusOrder[i] == curAppFocus {
 				if i+direction >= len(focusOrder) {
-					doneHandler()
+					doneHandler(&config.Environments[serversList.GetCurrentItem()],
+						taskName,
+						mtimeField.GetText(),
+						commandField.GetText())
+
 					return focusOrder[i]
 				}
 				result := int(math.Abs(float64(i+direction))) % len(focusOrder)
@@ -142,10 +181,6 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType, don
 			}
 		}
 		return focusOrder[0]
-	}
-	updateCommandFields = func(commandLabel, commandPlaceholder string) {
-		commandField.SetLabel(commandLabel)
-		commandField.SetPlaceholder(commandPlaceholder)
 	}
 
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -167,12 +202,6 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType, don
 func ResultsPage(app *tview.Application) tview.Primitive {
 	//tview.NewFlex() - Add / remove from flex item in case of different options are selected
 
-	newPrimitive := func(text string) tview.Primitive {
-		return tview.NewTextView().
-			SetTextAlign(tview.AlignCenter).
-			SetText(text)
-	}
-
 	grid := tview.NewGrid().
 		SetRows(2, 0).
 		SetColumns(30, 0).
@@ -180,11 +209,11 @@ func ResultsPage(app *tview.Application) tview.Primitive {
 		AddItem(newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available"), 0, 0, 1, 2, 0, 0, false)
 		// .AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
 
-	main := newPrimitive("Running logs")
-	result := newPrimitive("Status")
+	serverLogView = tview.NewTextArea()
+	serverStatusList = tview.NewList()
 
-	grid.AddItem(result, 1, 0, 1, 1, 0, 100, true).
-		AddItem(main, 1, 1, 1, 1, 0, 100, true)
+	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 100, true).
+		AddItem(serverLogView, 1, 1, 1, 1, 0, 100, true)
 
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// if event.Key() == tcell.KeyEsc {

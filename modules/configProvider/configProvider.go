@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"serversBulk/modules/logHelper"
 )
 
 type ConfigServerType struct {
@@ -26,7 +25,7 @@ type ConfigEnvironmentType struct {
 }
 type ConfigFileType struct {
 	DownloadFolder      string
-	LogsMtime           float32
+	LogsMtime           *float32
 	LogFolder           string
 	LogFilePattern      string
 	Login               string
@@ -40,32 +39,28 @@ type ConfigFileType struct {
 }
 
 func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
-	logHelper.LogPrintf("loading environment configuration file [%s]", *jsonFileName)
 	jsonFile, err := os.Open(*jsonFileName)
 	if err != nil {
-		logHelper.ErrFatalln(err, "Cannot Open Environment file")
+		panic(err)
 	}
 
 	var config ConfigEnvironmentType
 	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
 	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
-		logHelper.ErrFatalln(err, "Cannot Parse Environment file")
+		panic(err)
 	}
-	logHelper.LogPrintf("Environment config loaded succesfully")
 	return config
 }
 func GetFileConfig(jsonFileName *string) ConfigFileType {
-	logHelper.LogPrintf("loading configuration file [%s]", *jsonFileName)
 	jsonFile, err := os.Open(*jsonFileName)
 	if err != nil {
-		logHelper.ErrFatalln(err, "Cannot Open Config file")
+		panic(err)
 	}
 
 	var config ConfigFileType
 	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
 	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
-		logHelper.ErrFatalln(err, "Cannot Parse Config file")
+		panic(err)
 	}
-	logHelper.LogPrintf("config loaded succesfully")
 	return config
 }

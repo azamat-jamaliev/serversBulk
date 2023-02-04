@@ -6,7 +6,7 @@ type TaskType string
 
 const (
 	TypeUploadFile      TaskType = "UploadFile"
-	TypeArchiveLogs     TaskType = "ArchiveLogs"
+	TypeArchiveLogs     TaskType = "ArchiveLogs" //this is first task in Download Logs sequence
 	TypeArchiveGzip     TaskType = "TypeArchiveGzip"
 	TypeDownloadArchive TaskType = "DownloadLogs"
 	TypeGrepInLogs      TaskType = "GrepInLogs"
@@ -27,16 +27,15 @@ type ServerTask struct {
 	Status         TaskStatus
 	RemoteFileName string
 	Log            string
-	ConfigFileName string
-	ServersName    string
 	ModifTime      string
-	GrepFor        string
+	CommandCargo   string
 	ExecuteCmd     string
-	//LocalDir - for dwnloading files
-	LocalDir       string
 	LocalFile      string
-	LogFilePattern string
-	ConfigServer   configProvider.ConfigServerType
-	Server         string
-	Error          error
+	// GrepFor        string
+	// LocalDir - for dwnloading files
+	// LocalDir       string
+	// LogFilePattern string
+	ConfigServer configProvider.ConfigServerType
+	Server       string
+	Error        error
 }
