@@ -10,6 +10,8 @@ import (
 	"serversBulk/modules/configProvider"
 	"serversBulk/modules/tasks"
 
+	// _ "net/http/pprof"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -22,6 +24,15 @@ var ServerLog map[string]string
 var currentPageNmae string
 
 func main() {
+
+	// go http.ListenAndServe("localhost:8080", nil)
+
+	// TRACE - have not found how to
+	// file, _ := os.Create("./serversBulk_trace.out")
+	// tracerWriter := bufio.NewWriter(file)
+	// trace.Start(tracerWriter)
+	// defer trace.Stop()
+
 	currentPageNmae = "Main"
 	ServerLog = map[string]string{"": ""}
 	// ServerStatus = map[string]string{"": ""}
@@ -37,6 +48,14 @@ func main() {
 
 	app = tview.NewApplication()
 	pages := tview.NewPages()
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if currentPageNmae == "Reults" {
+			if event.Key() == tcell.KeyCtrlC {
+				app.Stop()
+			}
+		}
+		return event
+	})
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
 		if currentPageNmae == "Main" {
 			currentPageNmae = "Results"

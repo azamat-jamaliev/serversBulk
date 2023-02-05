@@ -243,24 +243,20 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 }
 func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
 	var fSize *FileSizeInfo
+	f := <-fileSizeInfo
+	fSize = &f
 	for {
-		select {
-		case f, ok := <-fileSizeInfo:
-			if !ok {
-				break
-			}
-			fSize = &f
-		case <-time.After(1 * time.Second):
-			if fSize != nil {
-				fileStat, err := os.Stat(fSize.FileName)
-				if err != nil {
-					logHandler(fSize.Server, fmt.Sprintf("printDownloadProgress unable to get stat from file [%s]\nERROR:%v", fSize.FileName, err))
-				}
-				persent := math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize)) / 100
-				statusHandler(fSize.Server, fmt.Sprintf("downloaded ~%v%% [%s]", persent, fSize.FileName))
-				logHandler(fSize.Server, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, persent, fSize.FileName))
-			}
+		fileStat, err := os.Stat(fSize.FileName)
+		if err != nil {
+			logHandler(fSize.Server, fmt.Sprintf("printDownloadProgress unable to get stat from file [%s]\nERROR:%v", fSize.FileName, err))
 		}
+		persent := math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize)) / 100
+		statusHandler(fSize.Server, fmt.Sprintf("downloaded ~%v%% [%s]", persent, fSize.FileName))
+		logHandler(fSize.Server, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, persent, fSize.FileName))
+		if persent > 95 {
+			break
+		}
+		time.Sleep(3 * time.Second)
 	}
 }
 func uploadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) {
