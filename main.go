@@ -10,6 +10,7 @@ import (
 	"serversBulk/modules/configProvider"
 	"serversBulk/modules/tasks"
 	"strconv"
+	"strings"
 
 	// _ "net/http/pprof"
 
@@ -20,6 +21,7 @@ import (
 var app *tview.Application
 var serverLogView *tview.TextView
 var serverStatusList *tview.List
+var serversList, commandList *tview.List
 
 var ServerLog map[string]string
 var currentPageNmae string
@@ -64,8 +66,24 @@ func main() {
 			go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 		}
 	}
-	pages.AddPage("Main", MainPage(app, &config, configDoneHandler), true, true)
+	envExitHandler := func() {
+		if currentPageNmae == "EditEnvironment" {
+			currentPageNmae = "Main"
+			pages.SwitchToPage("Main")
+			app.SetFocus(commandList)
+			pages.RemovePage("EditEnvironment")
+		}
+	}
+	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
+		if currentPageNmae == "Main" {
+			currentPageNmae = "EditEnvironment"
+			pages.AddAndSwitchToPage("EditEnvironment", EditEnvPage(app, config, envExitHandler), true)
+		}
+	}
+
+	pages.AddPage("Main", MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
 	pages.AddPage("Results", ResultsPage(app), true, false)
+	// pages.AddPage("EditEnvironment", EditEnvPage(app), true, false)
 
 	if err := app.SetRoot(pages, true).EnableMouse(false).Run(); err != nil {
 		panic(err)
@@ -105,9 +123,9 @@ func newPrimitive(text string) tview.Primitive {
 }
 
 func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
-	doneHandler func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string)) tview.Primitive {
+	doneHandler func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string),
+	editHandler func(config *configProvider.ConfigEnvironmentType)) tview.Primitive {
 	var searchField, commandField, mtimeField *tview.InputField
-	var serversList, commandList *tview.List
 	var taskName tasks.TaskType
 	var focusOrder []tview.Primitive
 	var getNewFocusPrimitive func(direction int) tview.Primitive
@@ -225,6 +243,12 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		}
 		return focusOrder[0]
 	}
+	serversList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlE {
+			editHandler(&config.Environments[serversList.GetCurrentItem()])
+		}
+		return event
+	})
 
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if currentPageNmae == "Main" {
@@ -258,7 +282,7 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 	page := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(grid, 0, 1, true).
-		AddItem(newPrimitive("[Enter]=move to next field     [ESC]=move back"), 1, 0, true)
+		AddItem(newPrimitive("[Enter]=move to next field  [ESC]=move back  [Ctrl+E]=edit env."), 1, 0, true)
 
 	return page
 }
@@ -288,4 +312,40 @@ func ResultsPage(app *tview.Application) tview.Primitive {
 		AddItem(newPrimitive("[ESC]=go back   [Ctrl+C]=to exit"), 1, 0, true)
 
 	return page
+}
+
+var editEnvForm *tview.Form
+
+func EditEnvPage(app *tview.Application, env *configProvider.ConfigEnvironmentType, exitHandler func()) tview.Primitive {
+	editEnvForm = tview.NewForm()
+	editEnvForm.SetBorder(true).SetTitle("Environment Information")
+
+	modifyEnv := env
+	if env == nil {
+		modifyEnv = &configProvider.ConfigEnvironmentType{}
+	}
+	editEnvForm.AddInputField("Environment name:", modifyEnv.Name, 20, nil, nil)
+	for _, srv := range modifyEnv.Servers {
+		editEnvForm.AddInputField("Server Name: ", srv.Name, 20, nil, nil).
+			AddTextArea("Log Folders:", strings.Join(srv.LogFolders[:], "\n"), 0, 3, 0, nil).
+			AddInputField("Log File Pattern: ", srv.LogFilePattern, 7, nil, nil).
+			AddInputField("ssh login: ", srv.Login, 20, nil, nil).
+			AddPasswordField("ssh password: ", srv.Passowrd, 20, '*', nil).
+			AddInputField("ssh identity file: ", srv.IdentityFile, 60, nil, nil).
+			AddTextArea("Servers IPs/Names:", strings.Join(srv.IpAddresses[:], "\n"), 0, 3, 0, nil).
+			AddCheckbox("Use Bastion (ssh tunnel):", srv.BastionServer != "", nil)
+		if srv.BastionServer != "" {
+			editEnvForm.AddInputField("Bastion server IP/name: ", srv.BastionServer, 20, nil, nil).
+				AddInputField("Bastion ssh login: ", srv.BastionLogin, 20, nil, nil).
+				AddPasswordField("Bastion ssh password: ", srv.BastionPassword, 20, '*', nil).
+				AddInputField("Bastion Identity File: ", srv.BastionIdentityFile, 60, nil, nil)
+		}
+	}
+	editEnvForm.AddButton(" -      Add Servers        - ", nil).
+		AddButton("Save", nil).
+		AddButton("Cancel", func() {
+			exitHandler()
+		})
+
+	return editEnvForm
 }
