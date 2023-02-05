@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"serversBulk/modules/configProvider"
 	"serversBulk/modules/tasks"
+	"strconv"
 
 	// _ "net/http/pprof"
 
@@ -72,7 +73,11 @@ func main() {
 }
 func ServerTaskStatusHandler(server, status string) {
 	if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
-		serverStatusList.SetItemText(serverItems[0], server, status)
+		_, secondText := serverStatusList.GetItemText(serverItems[0])
+		if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
+			serverStatusList.SetItemText(serverItems[0], server, status)
+		}
+		// tasks.Failed
 	} else {
 		serverStatusList.AddItem(server, status, 0, func() {
 			serverLogView.SetText(ServerLog[server])
@@ -112,7 +117,6 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		SetColumns(30, 0).
 		SetBorders(true).
 		AddItem(newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available"), 0, 0, 1, 2, 0, 0, false)
-		// .AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
 
 	serversList = tview.NewList()
 	for _, env := range config.Environments {
@@ -129,22 +133,29 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 
 	searchField = tview.NewInputField().
 		SetLabel("Quick search: ").
-		SetPlaceholder("server name or IP").
+		SetPlaceholder("environment name or server IP").
 		SetFieldWidth(70).
 		SetChangedFunc(func(text string) {
 			if found := serversList.FindItems(text, text, false, true); len(found) > 0 {
 				serversList.SetCurrentItem(found[0])
 			}
 		})
+
 	commandField = tview.NewInputField().
 		SetLabel("command: ").
 		SetPlaceholder("").
 		SetFieldWidth(60)
+	mtimeInfoLabel := tview.NewTextView()
 	mtimeField = tview.NewInputField().
-		SetLabel("Modified Time: ").
+		SetLabel("less than: ").
 		SetPlaceholder("").
 		SetAcceptanceFunc(tview.InputFieldFloat).
-		SetFieldWidth(5).SetText("-0.2")
+		SetFieldWidth(5).SetText("-0.2").
+		SetChangedFunc(func(text string) {
+			if value, err := strconv.ParseFloat(text, 64); err == nil {
+				mtimeInfoLabel.SetText(fmt.Sprintf("~%vh. ago", math.Round(math.Abs(24*float64(value)))))
+			}
+		})
 	if config.LogsMtime != nil {
 		mtimeField.SetText(fmt.Sprintf("%v", *config.LogsMtime))
 	}
@@ -174,12 +185,16 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		AddItem("Quite", "", 'q', func() {
 			app.Stop()
 		})
-
+		// mtimeInfoLabel
 	main := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexColumn).
-			AddItem(commandField, 0, 1, true).
-			AddItem(mtimeField, 0, 1, true), 1, 1, true).
+			AddItem(commandField, 0, 4, true).
+			AddItem(mtimeField, 0, 1, true).
+			AddItem(mtimeInfoLabel, 0, 1, true), 1, 1, true).
+		AddItem(tview.NewTextView().
+			SetTextAlign(tview.AlignLeft).
+			SetText(" Select Environment:"), 1, 1, true).
 		AddItem(searchField, 1, 1, true).
 		AddItem(serversList, 0, 1, true)
 
@@ -217,6 +232,24 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 				app.SetFocus(getNewFocusPrimitive(-1))
 			} else if event.Key() == tcell.KeyEnter && app.GetFocus() != commandList {
 				app.SetFocus(getNewFocusPrimitive(1))
+			} else if event.Key() == tcell.KeyDown {
+				if app.GetFocus() == commandField {
+					app.SetFocus(getNewFocusPrimitive(2))
+				} else if app.GetFocus() == searchField {
+					app.SetFocus(getNewFocusPrimitive(1))
+				}
+			} else if event.Key() == tcell.KeyRight {
+				if app.GetFocus() == commandField {
+					app.SetFocus(getNewFocusPrimitive(1))
+				}
+			} else if event.Key() == tcell.KeyLeft {
+				if app.GetFocus() == mtimeField {
+					app.SetFocus(getNewFocusPrimitive(-1))
+				}
+			} else if event.Key() == tcell.KeyUp {
+				if app.GetFocus() == searchField {
+					app.SetFocus(getNewFocusPrimitive(-2))
+				}
 			}
 		}
 		return event
