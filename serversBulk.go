@@ -180,13 +180,19 @@ func executeCommand(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 
 // NOTE: output result is in the channel
 func grepInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
-	task.ExecuteCmd = fmt.Sprintf("find %s -type f -iname \"%s\" -mtime %s -exec grep --color=auto -H -A15 -B15 -i \"%s\" {}  \\;", task.ConfigServer.LogFolder, task.ConfigServer.LogFilePattern, task.ModifTime, task.CommandCargo)
+	task.ExecuteCmd = fmt.Sprintf("cd %s", "")
+	for _, folder := range task.ConfigServer.LogFolders {
+		task.ExecuteCmd = fmt.Sprintf("%s; find %s -type f -iname \"%s\" -mtime %s -exec grep --color=auto -H -A15 -B15 -i \"%s\" {}  \\;", task.ExecuteCmd, folder, task.ConfigServer.LogFilePattern, task.ModifTime, task.CommandCargo)
+	}
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
 	output <- *taskForChannel(&task, str, e, tasks.Finished, nil)
 }
 func archiveLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 	tarNamefile := fmt.Sprintf("~/%s.%s", strings.ReplaceAll(task.Server, ".", "_"), "tar")
-	cmd := fmt.Sprintf("cd %s; find ./ -type f -iname \"%s\" -mtime %s -exec tar rvf %s {} \\;", task.ConfigServer.LogFolder, task.ConfigServer.LogFilePattern, task.ModifTime, tarNamefile)
+	cmd := fmt.Sprintf("cd %s", task.ConfigServer.LogFolders[0])
+	for _, folder := range task.ConfigServer.LogFolders {
+		cmd = fmt.Sprintf("%s; find %s -type f -iname \"%s\" -mtime %s -exec tar rvf %s {} \\;", cmd, folder, task.ConfigServer.LogFilePattern, task.ModifTime, tarNamefile)
+	}
 	str, e := executeOnServer(&task.ConfigServer, task.Server, cmd)
 
 	nextTask := tasks.TypeArchiveGzip

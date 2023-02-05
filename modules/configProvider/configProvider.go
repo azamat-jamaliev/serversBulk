@@ -8,7 +8,7 @@ import (
 
 type ConfigServerType struct {
 	Name                string
-	LogFolder           string
+	LogFolders          []string
 	LogFilePattern      string
 	Login               string
 	Passowrd            string
@@ -24,18 +24,9 @@ type ConfigEnvironmentType struct {
 	Servers []ConfigServerType
 }
 type ConfigFileType struct {
-	DownloadFolder      string
-	LogsMtime           *float32
-	LogFolder           string
-	LogFilePattern      string
-	Login               string
-	Passowrd            string
-	IdentityFile        string
-	BastionServer       string
-	BastionLogin        string
-	BastionIdentityFile string
-	BastionPassword     string
-	Environments        []ConfigEnvironmentType
+	DownloadFolder string
+	LogsMtime      *float32
+	Environments   []ConfigEnvironmentType
 }
 
 func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
