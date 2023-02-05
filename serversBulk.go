@@ -160,9 +160,11 @@ func taskForChannel(task *tasks.ServerTask, log string, err error, newStatus tas
 	return task
 }
 func executeOnServer(serverConf *configProvider.ConfigServerType, server, cmd string) (string, error) {
+	statusHandler(server, "CONNECTING...")
 	logHandler(server, fmt.Sprintf("connecting to server: [%s] to execute: [%s]", server, cmd))
 	sshAdv := sshHelper.OpenSshAdvanced(serverConf, server)
 	defer sshAdv.Close()
+	statusHandler(server, fmt.Sprintf("executing command:[%s]", cmd))
 	logHandler(server, fmt.Sprintf("executing command:[%s] on ssh server:[%s]", cmd, server))
 	buff, e := sshAdv.NewSession().Output(cmd)
 	if e != nil {
@@ -254,7 +256,9 @@ func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
 				if err != nil {
 					logHandler(fSize.Server, fmt.Sprintf("printDownloadProgress unable to get stat from file [%s]\nERROR:%v", fSize.FileName, err))
 				}
-				logHandler(fSize.Server, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize))/100, fSize.FileName))
+				persent := math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize)) / 100
+				statusHandler(fSize.Server, fmt.Sprintf("downloaded ~%v%% [%s]", persent, fSize.FileName))
+				logHandler(fSize.Server, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, persent, fSize.FileName))
 			}
 		}
 	}

@@ -15,12 +15,14 @@ import (
 )
 
 var app *tview.Application
-var serverLogView *tview.TextArea
+var serverLogView *tview.TextView
 var serverStatusList *tview.List
 
 var ServerLog map[string]string
+var currentPageNmae string
 
 func main() {
+	currentPageNmae = "Main"
 	ServerLog = map[string]string{"": ""}
 	// ServerStatus = map[string]string{"": ""}
 	ex, err := os.Executable()
@@ -28,7 +30,7 @@ func main() {
 		panic(err)
 	}
 	configPath := filepath.Dir(ex)
-	// configPath = "./build/config"
+	configPath = "./build"
 	configPath = path.Join(configPath, "serversBulk_config.json")
 	fmt.Println(configPath)
 	config := configProvider.GetFileConfig(&configPath)
@@ -36,8 +38,11 @@ func main() {
 	app = tview.NewApplication()
 	pages := tview.NewPages()
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
-		pages.SwitchToPage("Results")
-		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
+		if currentPageNmae == "Main" {
+			currentPageNmae = "Results"
+			pages.SwitchToPage("Results")
+			go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
+		}
 	}
 	pages.AddPage("Main", MainPage(app, &config, configDoneHandler), true, true)
 	pages.AddPage("Results", ResultsPage(app), true, false)
@@ -47,10 +52,14 @@ func main() {
 	}
 }
 func ServerTaskStatusHandler(server, status string) {
-	if serverItems := serverStatusList.FindItems(server, "", false, false); len(serverItems) > 0 {
+	if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
 		serverStatusList.SetItemText(serverItems[0], server, status)
 	} else {
-		serverStatusList.AddItem(server, status, 0, nil)
+		serverStatusList.AddItem(server, status, 0, func() {
+			serverLogView.SetText(ServerLog[server])
+			app.SetFocus(serverLogView)
+		})
+		app.SetFocus(serverStatusList)
 	}
 }
 func ServerLogHandler(server, log string) {
@@ -60,8 +69,8 @@ func ServerLogHandler(server, log string) {
 	} else {
 		ServerLog[server] = log
 	}
-	newText := fmt.Sprintf("%s\n%s", serverLogView.GetText(), log)
-	serverLogView.SetText(newText, true)
+	newText := fmt.Sprintf("%s\n%s", serverLogView.GetText(false), log)
+	serverLogView.SetText(newText)
 	app.Draw()
 }
 
@@ -174,7 +183,7 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 						mtimeField.GetText(),
 						commandField.GetText())
 
-					return focusOrder[i]
+					return focusOrder[0]
 				}
 				result := int(math.Abs(float64(i+direction))) % len(focusOrder)
 				return focusOrder[result]
@@ -184,10 +193,12 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 	}
 
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEsc {
-			app.SetFocus(getNewFocusPrimitive(-1))
-		} else if event.Key() == tcell.KeyEnter && app.GetFocus() != commandList {
-			app.SetFocus(getNewFocusPrimitive(1))
+		if currentPageNmae == "Main" {
+			if event.Key() == tcell.KeyEsc {
+				app.SetFocus(getNewFocusPrimitive(-1))
+			} else if event.Key() == tcell.KeyEnter && app.GetFocus() != commandList {
+				app.SetFocus(getNewFocusPrimitive(1))
+			}
 		}
 		return event
 	})
@@ -209,23 +220,25 @@ func ResultsPage(app *tview.Application) tview.Primitive {
 		AddItem(newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available"), 0, 0, 1, 2, 0, 0, false)
 		// .AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
 
-	serverLogView = tview.NewTextArea()
+	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()
 
 	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 100, true).
 		AddItem(serverLogView, 1, 1, 1, 1, 0, 100, true)
 
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// if event.Key() == tcell.KeyEsc {
-		// 	// app.SetFocus(getNewFocusPrimitive(-1))
-		// }
+	serverLogView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if currentPageNmae == "Reults" {
+			if event.Key() == tcell.KeyEsc {
+				app.SetFocus(serverStatusList)
+			}
+		}
 		return event
 	})
 
 	page := tview.NewFlex().
 		SetDirection(tview.FlexRow).
 		AddItem(grid, 0, 1, true).
-		AddItem(newPrimitive("[ESC]=move back"), 1, 0, true)
+		AddItem(newPrimitive("[ESC]=go back   [Ctrl+C]=to exit"), 1, 0, true)
 
 	return page
 }
