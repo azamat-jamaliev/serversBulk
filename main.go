@@ -245,13 +245,8 @@ func ResultsPage(app *tview.Application) tview.Primitive {
 	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 100, true).
 		AddItem(serverLogView, 1, 1, 1, 1, 0, 100, true)
 
-	serverLogView.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if currentPageNmae == "Reults" {
-			if event.Key() == tcell.KeyEsc {
-				app.SetFocus(serverStatusList)
-			}
-		}
-		return event
+	serverLogView.SetDoneFunc(func(key tcell.Key) {
+		app.SetFocus(serverStatusList)
 	})
 
 	page := tview.NewFlex().
