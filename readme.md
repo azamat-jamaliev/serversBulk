@@ -25,6 +25,7 @@ env GOOS=linux GOARCH=amd64 go build -o ./build .
 ### Cross platform: Build for Windows
 ```sh
 env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
+env GOOS=windows GOARCH=amd64 go build -o ./build/serversBulkTUI.exe .
 ```
 
 ## Execute

@@ -1,4 +1,3 @@
-// Demo code for the List primitive.
 package main
 
 import (
@@ -44,7 +43,7 @@ func main() {
 		panic(err)
 	}
 	configPath := filepath.Dir(ex)
-	configPath = "./build"
+	// configPath = "./build"
 	configPath = path.Join(configPath, "serversBulk_config.json")
 	fmt.Println(configPath)
 	config := configProvider.GetFileConfig(&configPath)
@@ -152,7 +151,7 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 	searchField = tview.NewInputField().
 		SetLabel("Quick search: ").
 		SetPlaceholder("environment name or server IP").
-		SetFieldWidth(70).
+		SetFieldWidth(40).
 		SetChangedFunc(func(text string) {
 			if found := serversList.FindItems(text, text, false, true); len(found) > 0 {
 				serversList.SetCurrentItem(found[0])
@@ -162,7 +161,7 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 	commandField = tview.NewInputField().
 		SetLabel("command: ").
 		SetPlaceholder("").
-		SetFieldWidth(60)
+		SetFieldWidth(30)
 	mtimeInfoLabel := tview.NewTextView()
 	mtimeField = tview.NewInputField().
 		SetLabel("less than: ").
@@ -206,8 +205,8 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		// mtimeInfoLabel
 	main := tview.NewFlex().
 		SetDirection(tview.FlexRow).
+		AddItem(commandField, 1, 1, true).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexColumn).
-			AddItem(commandField, 0, 4, true).
 			AddItem(mtimeField, 0, 1, true).
 			AddItem(mtimeInfoLabel, 0, 1, true), 1, 1, true).
 		AddItem(tview.NewTextView().
@@ -216,8 +215,8 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		AddItem(searchField, 1, 1, true).
 		AddItem(serversList, 0, 1, true)
 
-	grid.AddItem(commandList, 1, 0, 1, 1, 0, 100, true).
-		AddItem(main, 1, 1, 1, 1, 0, 100, true)
+	grid.AddItem(commandList, 1, 0, 1, 1, 0, 20, true).
+		AddItem(main, 1, 1, 1, 1, 0, 60, true)
 
 	focusOrder = []tview.Primitive{commandList,
 		commandField,
@@ -257,22 +256,12 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 			} else if event.Key() == tcell.KeyEnter && app.GetFocus() != commandList {
 				app.SetFocus(getNewFocusPrimitive(1))
 			} else if event.Key() == tcell.KeyDown {
-				if app.GetFocus() == commandField {
-					app.SetFocus(getNewFocusPrimitive(2))
-				} else if app.GetFocus() == searchField {
+				if app.GetFocus() == searchField || app.GetFocus() == commandField || app.GetFocus() == mtimeField {
 					app.SetFocus(getNewFocusPrimitive(1))
-				}
-			} else if event.Key() == tcell.KeyRight {
-				if app.GetFocus() == commandField {
-					app.SetFocus(getNewFocusPrimitive(1))
-				}
-			} else if event.Key() == tcell.KeyLeft {
-				if app.GetFocus() == mtimeField {
-					app.SetFocus(getNewFocusPrimitive(-1))
 				}
 			} else if event.Key() == tcell.KeyUp {
-				if app.GetFocus() == searchField {
-					app.SetFocus(getNewFocusPrimitive(-2))
+				if app.GetFocus() == searchField || app.GetFocus() == mtimeField {
+					app.SetFocus(getNewFocusPrimitive(-1))
 				}
 			}
 		}
@@ -299,8 +288,8 @@ func ResultsPage(app *tview.Application) tview.Primitive {
 	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()
 
-	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 100, true).
-		AddItem(serverLogView, 1, 1, 1, 1, 0, 100, true)
+	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 20, true).
+		AddItem(serverLogView, 1, 1, 1, 1, 0, 60, true)
 
 	serverLogView.SetDoneFunc(func(key tcell.Key) {
 		app.SetFocus(serverStatusList)

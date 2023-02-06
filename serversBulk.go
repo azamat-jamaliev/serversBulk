@@ -34,43 +34,6 @@ type FileSizeInfo struct {
 var logHandler func(server, log string)
 var statusHandler func(server, status string)
 
-func mainOld() {
-	var taskName tasks.TaskType
-	configFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
-	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")
-	modifTime := flag.String("mtime", "-0.2", "same as mtime for 'find'")
-	grepFor := flag.String("s", "", "search string like in:\ngrep --color=auto --mtime -0.2 -H -A2 -B4  \"search string\"")
-	executeCmd := flag.String("e", "", "execute given command:\nserversBulk --servers SERVER_GROUP_NAME -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get SERVER_GROUP_NAME health from all SERVER_GROUP_NAME nodes")
-	localDir := flag.String("d", "", "folder where log files should be downloaded")
-	uploadLocalFile := flag.String("u", "", "File which will be uploaded to /var/tmp to the target servers")
-	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
-	flag.Parse()
-
-	color.New(color.FgYellow).Println("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
-
-	cargo := ""
-	switch {
-	case *grepFor != "":
-		taskName = tasks.TypeGrepInLogs
-		cargo = *grepFor
-	case *executeCmd != "":
-		taskName = tasks.TypeExecuteCommand
-		cargo = *executeCmd
-	case *localDir != "":
-		taskName = tasks.TypeArchiveLogs
-		cargo = *localDir
-	case *uploadLocalFile != "":
-		taskName = tasks.TypeUploadFile
-	}
-
-	config := configProvider.GetEnvironemntConfig(configFileName)
-	StartTaskForEnv(&config,
-		taskName,
-		*serversName,
-		*modifTime,
-		cargo, nil, nil)
-
-}
 func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 	taskName tasks.TaskType,
 	serversName,
@@ -287,4 +250,42 @@ func uploadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 	logHandler(task.Server, fmt.Sprintf("UPLOADING file [%s] to [%s] on server [%s]\n", task.CommandCargo, task.RemoteFileName, task.Server))
 	_, err = io.Copy(dstFile, srcFile)
 	output <- *taskForChannel(&task, fmt.Sprintf("File on remote server[%s]", destFilePath), err, tasks.Finished, nil)
+}
+
+func MainOld() {
+	var taskName tasks.TaskType
+	configFileName := flag.String("c", "./config/serversBulk_config.json", "path to environment configuration file")
+	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")
+	modifTime := flag.String("mtime", "-0.2", "same as mtime for 'find'")
+	grepFor := flag.String("s", "", "search string like in:\ngrep --color=auto --mtime -0.2 -H -A2 -B4  \"search string\"")
+	executeCmd := flag.String("e", "", "execute given command:\nserversBulk --servers SERVER_GROUP_NAME -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get SERVER_GROUP_NAME health from all SERVER_GROUP_NAME nodes")
+	localDir := flag.String("d", "", "folder where log files should be downloaded")
+	uploadLocalFile := flag.String("u", "", "File which will be uploaded to /var/tmp to the target servers")
+	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
+	flag.Parse()
+
+	color.New(color.FgYellow).Println("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
+
+	cargo := ""
+	switch {
+	case *grepFor != "":
+		taskName = tasks.TypeGrepInLogs
+		cargo = *grepFor
+	case *executeCmd != "":
+		taskName = tasks.TypeExecuteCommand
+		cargo = *executeCmd
+	case *localDir != "":
+		taskName = tasks.TypeArchiveLogs
+		cargo = *localDir
+	case *uploadLocalFile != "":
+		taskName = tasks.TypeUploadFile
+	}
+
+	config := configProvider.GetEnvironemntConfig(configFileName)
+	StartTaskForEnv(&config,
+		taskName,
+		*serversName,
+		*modifTime,
+		cargo, nil, nil)
+
 }
