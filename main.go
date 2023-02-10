@@ -58,13 +58,7 @@ func main() {
 		}
 		return event
 	})
-	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
-		if currentPageNmae == "Main" {
-			currentPageNmae = "Results"
-			pages.SwitchToPage("Results")
-			go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
-		}
-	}
+
 	envExitHandler := func() {
 		if currentPageNmae == "EditEnvironment" {
 			currentPageNmae = "Main"
@@ -79,15 +73,27 @@ func main() {
 			pages.AddAndSwitchToPage("EditEnvironment", EditEnvPage(app, config, envExitHandler), true)
 		}
 	}
+	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
+		if currentPageNmae == "Main" {
+			currentPageNmae = "Results"
+			pages.SwitchToPage("Results")
+			go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
+		}
+	}
 
-	pages.AddPage("Main", MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
-	pages.AddPage("Results", ResultsPage(app), true, false)
-	// pages.AddPage("EditEnvironment", EditEnvPage(app), true, false)
-
+	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {
+		pages.AddPage("Results", ResultsPage(app), true, false)
+		currentPageNmae = "Results"
+		pages.SwitchToPage("Results")
+	} else {
+		pages.AddPage("Main", MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
+		pages.AddPage("Results", ResultsPage(app), true, false)
+	}
 	if err := app.SetRoot(pages, true).EnableMouse(false).Run(); err != nil {
 		panic(err)
 	}
 }
+
 func ServerTaskStatusHandler(server, status string) {
 	if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
 		_, secondText := serverStatusList.GetItemText(serverItems[0])
