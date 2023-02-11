@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"serversBulk/modules/configProvider"
 	"serversBulk/modules/tasks"
+	"serversBulk/pages"
 	"strconv"
 	"strings"
 
@@ -18,12 +19,31 @@ import (
 )
 
 var app *tview.Application
-var serverLogView *tview.TextView
-var serverStatusList *tview.List
 var serversList, commandList *tview.List
 
-var ServerLog map[string]string
+var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
+
+// map[string]string
 var currentPageNmae string
+
+func ServerTaskStatusHandler(server, status string) {
+	ServerStatus[server] = status
+	pages.DisplayServerTaskStatus(server, string(status))
+}
+func ServerLogHandler(server, logRecord string) {
+	if val, ok := ServerLog[server]; ok {
+		ServerLog[server] = fmt.Sprintf("%s\n%s", val, logRecord)
+	} else {
+		ServerLog[server] = logRecord
+	}
+	pages.DisplayServerLog(server, ServerLog[server])
+}
+func GetServerLog(server string) string {
+	if val, ok := ServerLog[server]; ok {
+		return val
+	}
+	return ""
+}
 
 func main() {
 
@@ -36,7 +56,6 @@ func main() {
 	// defer trace.Stop()
 
 	currentPageNmae = "Main"
-	ServerLog = map[string]string{"": ""}
 	// ServerStatus = map[string]string{"": ""}
 	ex, err := os.Executable()
 	if err != nil {
@@ -49,7 +68,7 @@ func main() {
 	config := configProvider.GetFileConfig(&configPath)
 
 	app = tview.NewApplication()
-	pages := tview.NewPages()
+	pagesView := tview.NewPages()
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if currentPageNmae == "Reults" {
 			if event.Key() == tcell.KeyCtrlC {
@@ -62,63 +81,36 @@ func main() {
 	envExitHandler := func() {
 		if currentPageNmae == "EditEnvironment" {
 			currentPageNmae = "Main"
-			pages.SwitchToPage("Main")
+			pagesView.SwitchToPage("Main")
 			app.SetFocus(commandList)
-			pages.RemovePage("EditEnvironment")
+			pagesView.RemovePage("EditEnvironment")
 		}
 	}
 	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
 		if currentPageNmae == "Main" {
 			currentPageNmae = "EditEnvironment"
-			pages.AddAndSwitchToPage("EditEnvironment", EditEnvPage(app, config, envExitHandler), true)
+			pagesView.AddAndSwitchToPage("EditEnvironment", EditEnvPage(app, config, envExitHandler), true)
 		}
 	}
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
 		if currentPageNmae == "Main" {
 			currentPageNmae = "Results"
-			pages.SwitchToPage("Results")
+			pagesView.SwitchToPage("Results")
 			go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 		}
 	}
 
 	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {
-		pages.AddPage("Results", ResultsPage(app), true, false)
+		pagesView.AddPage("Results", pages.ResultsPage(app, GetServerLog), true, false)
 		currentPageNmae = "Results"
-		pages.SwitchToPage("Results")
+		pagesView.SwitchToPage("Results")
 	} else {
-		pages.AddPage("Main", MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
-		pages.AddPage("Results", ResultsPage(app), true, false)
+		pagesView.AddPage("Main", MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
+		pagesView.AddPage("Results", pages.ResultsPage(app, GetServerLog), true, false)
 	}
-	if err := app.SetRoot(pages, true).EnableMouse(false).Run(); err != nil {
+	if err := app.SetRoot(pagesView, true).EnableMouse(false).Run(); err != nil {
 		panic(err)
 	}
-}
-
-func ServerTaskStatusHandler(server, status string) {
-	if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
-		_, secondText := serverStatusList.GetItemText(serverItems[0])
-		if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
-			serverStatusList.SetItemText(serverItems[0], server, status)
-		}
-		// tasks.Failed
-	} else {
-		serverStatusList.AddItem(server, status, 0, func() {
-			serverLogView.SetText(ServerLog[server])
-			app.SetFocus(serverLogView)
-		})
-		app.SetFocus(serverStatusList)
-	}
-}
-func ServerLogHandler(server, log string) {
-	val, ok := ServerLog[server]
-	if ok {
-		ServerLog[server] = fmt.Sprintf("%s\n%s", val, log)
-	} else {
-		ServerLog[server] = log
-	}
-	newText := fmt.Sprintf("%s\n%s", serverLogView.GetText(false), log)
-	serverLogView.SetText(newText)
-	app.Draw()
 }
 
 func newPrimitive(text string) tview.Primitive {
@@ -205,7 +197,7 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 			taskName = tasks.TypeUploadFile
 			app.SetFocus(getNewFocusPrimitive(1))
 		}).
-		AddItem("Quite", "", 'q', func() {
+		AddItem("Quit", "", 'q', func() {
 			app.Stop()
 		})
 		// mtimeInfoLabel
@@ -278,33 +270,6 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		SetDirection(tview.FlexRow).
 		AddItem(grid, 0, 1, true).
 		AddItem(newPrimitive("[Enter]=move to next field  [ESC]=move back  [Ctrl+E]=edit env."), 1, 0, true)
-
-	return page
-}
-func ResultsPage(app *tview.Application) tview.Primitive {
-	//tview.NewFlex() - Add / remove from flex item in case of different options are selected
-
-	grid := tview.NewGrid().
-		SetRows(2, 0).
-		SetColumns(30, 0).
-		SetBorders(true).
-		AddItem(newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available"), 0, 0, 1, 2, 0, 0, false)
-		// .AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
-
-	serverLogView = tview.NewTextView()
-	serverStatusList = tview.NewList()
-
-	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 20, true).
-		AddItem(serverLogView, 1, 1, 1, 1, 0, 60, true)
-
-	serverLogView.SetDoneFunc(func(key tcell.Key) {
-		app.SetFocus(serverStatusList)
-	})
-
-	page := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(grid, 0, 1, true).
-		AddItem(newPrimitive("[ESC]=go back   [Ctrl+C]=to exit"), 1, 0, true)
 
 	return page
 }
