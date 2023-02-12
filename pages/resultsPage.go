@@ -3,7 +3,6 @@ package pages
 import (
 	"serversBulk/modules/tasks"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -21,29 +20,28 @@ func DisplayServerTaskStatus(server, status string) {
 	} else {
 		serverStatusList.AddItem(server, status, 0, func() {
 			serverLogView.SetText(getServerLog(server))
-			app.SetFocus(serverLogView)
+			// app.SetFocus(serverLogView)
 		})
-		app.SetFocus(serverStatusList)
+		// app.SetFocus(serverStatusList)
 	}
 }
 func DisplayServerLog(server, newText string) {
 	serverLogView.SetText(newText)
-	app.Draw()
+	// app.Draw()
 }
 func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) tview.Primitive {
-	app = appObj
-	page, grid := newMainPageWithGrid()
+	ctrl, page, grid := NewMainPageController(appObj, func() {})
 
 	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()
 	getServerLog = getServerLogFunc
 
-	grid.AddItem(serverStatusList, 1, 0, 1, 1, 0, 20, true).
-		AddItem(serverLogView, 1, 1, 1, 1, 0, 60, true)
+	grid.AddItem(ctrl.addFocus(serverStatusList), 1, 0, 1, 1, 0, 20, true).
+		AddItem(ctrl.addFocus(serverLogView), 1, 1, 1, 1, 0, 60, true)
 
-	serverLogView.SetDoneFunc(func(key tcell.Key) {
-		app.SetFocus(serverStatusList)
-	})
+	// serverLogView.SetDoneFunc(func(key tcell.Key) {
+	// 	app.SetFocus(serverStatusList)
+	// })
 
 	return page
 }

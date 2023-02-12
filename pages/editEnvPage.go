@@ -8,6 +8,7 @@ import (
 )
 
 func EditEnvPage(appObj *tview.Application, env *configProvider.ConfigEnvironmentType, exitHandlerFunc func()) tview.Primitive {
+	// var focusOrder []tview.Primitive
 	editEnvForm := tview.NewForm()
 	editEnvForm.SetBorder(true).SetTitle("Environment Information")
 
