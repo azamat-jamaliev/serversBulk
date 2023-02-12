@@ -42,16 +42,12 @@ func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
 	}
 	return config
 }
-func GetFileConfig(jsonFileName *string) ConfigFileType {
-	jsonFile, err := os.Open(*jsonFileName)
-	if err != nil {
-		panic(err)
-	}
-
+func GetFileConfig(jsonFileName string) (ConfigFileType, error) {
 	var config ConfigFileType
-	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
-	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
-		panic(err)
+	jsonFile, err := os.Open(jsonFileName)
+	if err == nil {
+		jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
+		err = json.Unmarshal(jsonFileBytes, &config)
 	}
-	return config
+	return config, err
 }

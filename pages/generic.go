@@ -4,6 +4,12 @@ import "github.com/rivo/tview"
 
 var app *tview.Application
 
+const (
+	PageNameEditEnv string = "PageNameEditEnv"
+	PageNameMain    string = "PageNameMain"
+	PageNameResults string = "PageNameResults"
+)
+
 func newPrimitive(text string) tview.Primitive {
 	return tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).

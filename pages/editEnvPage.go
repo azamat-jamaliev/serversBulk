@@ -7,7 +7,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func EditEnvPage(app *tview.Application, env *configProvider.ConfigEnvironmentType, exitHandler func()) tview.Primitive {
+func EditEnvPage(appObj *tview.Application, env *configProvider.ConfigEnvironmentType, exitHandlerFunc func()) tview.Primitive {
 	editEnvForm := tview.NewForm()
 	editEnvForm.SetBorder(true).SetTitle("Environment Information")
 
@@ -35,7 +35,7 @@ func EditEnvPage(app *tview.Application, env *configProvider.ConfigEnvironmentTy
 	editEnvForm.AddButton(" -      Add Servers        - ", nil).
 		AddButton("Save", nil).
 		AddButton("Cancel", func() {
-			exitHandler()
+			exitHandlerFunc()
 		})
 
 	return editEnvForm
