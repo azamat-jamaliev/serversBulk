@@ -10,7 +10,6 @@ import (
 	"serversBulk/modules/tasks"
 	"serversBulk/pages"
 	"strconv"
-	"strings"
 
 	// _ "net/http/pprof"
 
@@ -89,7 +88,7 @@ func main() {
 	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
 		if currentPageNmae == "Main" {
 			currentPageNmae = "EditEnvironment"
-			pagesView.AddAndSwitchToPage("EditEnvironment", EditEnvPage(app, config, envExitHandler), true)
+			pagesView.AddAndSwitchToPage("EditEnvironment", pages.EditEnvPage(app, config, envExitHandler), true)
 		}
 	}
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
@@ -272,40 +271,4 @@ func MainPage(app *tview.Application, config *configProvider.ConfigFileType,
 		AddItem(newPrimitive("[Enter]=move to next field  [ESC]=move back  [Ctrl+E]=edit env."), 1, 0, true)
 
 	return page
-}
-
-var editEnvForm *tview.Form
-
-func EditEnvPage(app *tview.Application, env *configProvider.ConfigEnvironmentType, exitHandler func()) tview.Primitive {
-	editEnvForm = tview.NewForm()
-	editEnvForm.SetBorder(true).SetTitle("Environment Information")
-
-	modifyEnv := env
-	if env == nil {
-		modifyEnv = &configProvider.ConfigEnvironmentType{}
-	}
-	editEnvForm.AddInputField("Environment name:", modifyEnv.Name, 20, nil, nil)
-	for _, srv := range modifyEnv.Servers {
-		editEnvForm.AddInputField("Server Name: ", srv.Name, 20, nil, nil).
-			AddTextArea("Log Folders:", strings.Join(srv.LogFolders[:], "\n"), 0, 3, 0, nil).
-			AddInputField("Log File Pattern: ", srv.LogFilePattern, 7, nil, nil).
-			AddInputField("ssh login: ", srv.Login, 20, nil, nil).
-			AddPasswordField("ssh password: ", srv.Passowrd, 20, '*', nil).
-			AddInputField("ssh identity file: ", srv.IdentityFile, 60, nil, nil).
-			AddTextArea("Servers IPs/Names:", strings.Join(srv.IpAddresses[:], "\n"), 0, 3, 0, nil).
-			AddCheckbox("Use Bastion (ssh tunnel):", srv.BastionServer != "", nil)
-		if srv.BastionServer != "" {
-			editEnvForm.AddInputField("Bastion server IP/name: ", srv.BastionServer, 20, nil, nil).
-				AddInputField("Bastion ssh login: ", srv.BastionLogin, 20, nil, nil).
-				AddPasswordField("Bastion ssh password: ", srv.BastionPassword, 20, '*', nil).
-				AddInputField("Bastion Identity File: ", srv.BastionIdentityFile, 60, nil, nil)
-		}
-	}
-	editEnvForm.AddButton(" -      Add Servers        - ", nil).
-		AddButton("Save", nil).
-		AddButton("Cancel", func() {
-			exitHandler()
-		})
-
-	return editEnvForm
 }
