@@ -10,11 +10,11 @@ import (
 )
 
 type pageController struct {
-	focusOrder []tview.Primitive
-	app        *tview.Application
-	header     tview.Primitive
-	footer     tview.Primitive
-	// lastItemExitHandler func()
+	focusOrder          []tview.Primitive
+	app                 *tview.Application
+	header              tview.Primitive
+	footer              tview.Primitive
+	lastItemExitHandler func()
 }
 type FocusChangeDirection string
 
@@ -44,6 +44,9 @@ func (pCtrl *pageController) setNewFocus(event *tcell.EventKey) {
 				if i+d >= len(pCtrl.focusOrder) {
 					// doneHandlerFunc()
 					// return focusOrder[0]
+					if pCtrl.lastItemExitHandler != nil {
+						pCtrl.lastItemExitHandler()
+					}
 				}
 				result := int(math.Abs(float64(i+d))) % len(pCtrl.focusOrder)
 				pCtrl.app.SetFocus(pCtrl.focusOrder[result])
@@ -69,7 +72,7 @@ func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFun
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
 	controller.header = controller.newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available")
 	controller.footer = controller.newPrimitive("[ESC]=go back   [Ctrl+C]=to exit")
-	// controller.lastItemExitHandler = lastItemSelectedHandlerFunc
+	controller.lastItemExitHandler = lastItemSelectedHandlerFunc
 	grid := tview.NewGrid().
 		SetRows(2, 0).
 		SetColumns(30, 0).

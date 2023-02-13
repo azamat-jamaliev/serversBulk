@@ -71,27 +71,37 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	}
 
 	commandList := tview.NewList().ShowSecondaryText(false).
-		AddItem("Download logs", "", 'd', func() {
+		AddItem("Download logs", "", 'd', nil).
+		AddItem("Execute command", "", 'e', nil).
+		AddItem("Search in logs", "", 's', nil).
+		AddItem("Upload file", "", 's', nil)
+	listHandlers := []func(){
+		func() {
 			commandField.SetLabel("download to: ").SetPlaceholder("C:\\temp or ~/Downloads").
 				SetText(config.DownloadFolder)
 			taskName = tasks.TypeArchiveLogs
-		}).
-		AddItem("Execute command", "", 'e', func() {
-			commandField.SetLabel("command: ").SetPlaceholder("to execute on servers")
+		},
+		func() {
+			commandField.SetLabel("command: ").SetPlaceholder("to execute on servers").
+				SetText("")
 			taskName = tasks.TypeExecuteCommand
-		}).
-		AddItem("Search in logs", "", 's', func() {
-			commandField.SetLabel("search: ").SetPlaceholder("text to grep on server")
+		},
+		func() {
+			commandField.SetLabel("search: ").SetPlaceholder("text to grep on server").
+				SetText("")
 			taskName = tasks.TypeGrepInLogs
-		}).
-		AddItem("Upload file", "", 's', func() {
-			commandField.SetLabel("file to upload: ").SetPlaceholder("C:\\temp\\1.zip or ~/Downloads/1.zip")
+		},
+		func() {
+			commandField.SetLabel("file to upload: ").SetPlaceholder("C:\\temp\\1.zip or ~/Downloads/1.zip").
+				SetText("")
 			taskName = tasks.TypeUploadFile
-		}).
-		AddItem("Quit", "", 'q', func() {
-			ctrl.app.Stop()
-		})
+		}}
+	commandList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
+		listHandlers[index]()
+	})
 	ctrl.addFocus(commandList)
+	listHandlers[0]()
+
 	// mtimeInfoLabel
 	main := tview.NewFlex().
 		SetDirection(tview.FlexRow).
