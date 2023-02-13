@@ -66,6 +66,7 @@ func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()
 		focusOrder: []tview.Primitive{},
 		app:        appObj,
 	}
+	app = appObj
 	return p
 }
 func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*pageController, *tview.Flex, *tview.Grid) {

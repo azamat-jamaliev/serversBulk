@@ -27,7 +27,7 @@ func DisplayServerTaskStatus(server, status string) {
 }
 func DisplayServerLog(server, newText string) {
 	serverLogView.SetText(newText)
-	// app.Draw()
+	app.Draw()
 }
 func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) tview.Primitive {
 	ctrl, page, grid := NewMainPageController(appObj, func() {})
