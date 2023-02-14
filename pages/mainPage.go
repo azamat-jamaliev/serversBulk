@@ -14,7 +14,7 @@ import (
 // *tview.Application, getServerLogFunc func(server string) string)
 func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	doneHandlerFunc func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string),
-	editHandlerFunc func(config *configProvider.ConfigEnvironmentType)) tview.Primitive {
+	editHandlerFunc func(config *configProvider.ConfigEnvironmentType)) (tview.Primitive, *PageController) {
 
 	var searchField, commandField, mtimeField *tview.InputField
 	var taskName tasks.TaskType
@@ -125,5 +125,5 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		return event
 	})
 
-	return page
+	return page, ctrl
 }

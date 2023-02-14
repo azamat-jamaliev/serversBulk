@@ -11,7 +11,6 @@ import (
 
 	// _ "net/http/pprof"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -48,7 +47,8 @@ func main() {
 	// tracerWriter := bufio.NewWriter(file)
 	// trace.Start(tracerWriter)
 	// defer trace.Stop()
-
+	var resultsPage, mainPage tview.Primitive
+	var mainPageController, resultPageController *pages.PageController
 	ex, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -64,12 +64,6 @@ func main() {
 
 	app := tview.NewApplication()
 	pagesView := tview.NewPages()
-	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyCtrlC {
-			app.Stop()
-		}
-		return event
-	})
 
 	envExitHandler := func() {
 		pagesView.SwitchToPage(pages.PageNameMain)
@@ -80,15 +74,21 @@ func main() {
 	}
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
 		pagesView.SwitchToPage(pages.PageNameResults)
+		resultPageController.SetDefaultFocus()
 		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 	}
 
+	resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog)
+	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler)
+	mainPageController.SetDefaultFocus()
+
 	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {
-		pagesView.AddPage(pages.PageNameResults, pages.ResultsPage(app, GetServerLog), true, false)
+		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 		pagesView.SwitchToPage(pages.PageNameResults)
+		resultPageController.SetDefaultFocus()
 	} else {
-		pagesView.AddPage(pages.PageNameMain, pages.MainPage(app, &config, configDoneHandler, configEditHandler), true, true)
-		pagesView.AddPage(pages.PageNameResults, pages.ResultsPage(app, GetServerLog), true, false)
+		pagesView.AddPage(pages.PageNameMain, mainPage, true, true)
+		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}
 	if err := app.SetRoot(pagesView, true).EnableMouse(false).Run(); err != nil {
 		panic(err)

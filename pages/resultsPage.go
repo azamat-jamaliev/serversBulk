@@ -29,7 +29,7 @@ func DisplayServerLog(server, newText string) {
 	serverLogView.SetText(newText)
 	app.Draw()
 }
-func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) tview.Primitive {
+func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) (tview.Primitive, *PageController) {
 	ctrl, page, grid := NewMainPageController(appObj, func() {})
 
 	serverLogView = tview.NewTextView()
@@ -43,5 +43,5 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	// 	app.SetFocus(serverStatusList)
 	// })
 
-	return page
+	return page, ctrl
 }

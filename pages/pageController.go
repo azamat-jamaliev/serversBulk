@@ -9,7 +9,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-type pageController struct {
+type PageController struct {
 	focusOrder          []tview.Primitive
 	app                 *tview.Application
 	header              tview.Primitive
@@ -18,24 +18,30 @@ type pageController struct {
 }
 type FocusChangeDirection string
 
-func (pCtrl *pageController) addFocus(primitive tview.Primitive) tview.Primitive {
+func (pCtrl *PageController) addFocus(primitive tview.Primitive) tview.Primitive {
 	pCtrl.focusOrder = append(pCtrl.focusOrder, primitive)
 	return primitive
 }
 
-func (pCtrl *pageController) setNewFocus(event *tcell.EventKey) {
+func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 	d := 0
-	process := true
+	processUpDown := true
+	processEnter := true
+	// *TextView
 	curAppFocus := pCtrl.app.GetFocus()
-	if strings.Trim(reflect.ValueOf(curAppFocus).Type().String(), " ") == "*tview.List" {
-		process = false
+	curFocusName := strings.Trim(reflect.ValueOf(curAppFocus).Type().String(), " ")
+	if curFocusName == "*tview.List" {
+		processUpDown = false
+	} else if curFocusName == "*tview.TextView" {
+		processUpDown = false
+		processEnter = false
 	}
 	// fmt.Println("reflect.ValueOf(curAppFocus).Type().String() = [", reflect.ValueOf(curAppFocus).Type().String(), "]")
 	if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyRight ||
-		(event.Key() == tcell.KeyUp && process) {
+		(event.Key() == tcell.KeyUp && processUpDown) {
 		d = -1
-	} else if event.Key() == tcell.KeyEnter || event.Key() == tcell.KeyLeft ||
-		(event.Key() == tcell.KeyDown && process) {
+	} else if (event.Key() == tcell.KeyEnter && processEnter) || event.Key() == tcell.KeyLeft ||
+		(event.Key() == tcell.KeyDown && processUpDown) || event.Key() == tcell.KeyTab {
 		d = 1
 	}
 	if d != 0 {
@@ -50,26 +56,39 @@ func (pCtrl *pageController) setNewFocus(event *tcell.EventKey) {
 				}
 				result := int(math.Abs(float64(i+d))) % len(pCtrl.focusOrder)
 				pCtrl.app.SetFocus(pCtrl.focusOrder[result])
+				return
 			}
 		}
+		pCtrl.SetDefaultFocus()
 	}
 }
+func (pCtrl *PageController) SetDefaultFocus() {
+	if pCtrl.app != nil {
+		if pCtrl.focusOrder != nil && len(pCtrl.focusOrder) > 0 {
+			pCtrl.app.SetFocus(pCtrl.focusOrder[0])
+		}
+	}
+	pCtrl.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		pCtrl.setNewFocus(event)
+		return event
+	})
+}
 
-func (pCtrl *pageController) newPrimitive(text string) tview.Primitive {
+func (pCtrl *PageController) newPrimitive(text string) tview.Primitive {
 	return tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(text)
 }
 
-func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()) *pageController {
-	p := &pageController{
+func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()) *PageController {
+	p := &PageController{
 		focusOrder: []tview.Primitive{},
 		app:        appObj,
 	}
 	app = appObj
 	return p
 }
-func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*pageController, *tview.Flex, *tview.Grid) {
+func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*PageController, *tview.Flex, *tview.Grid) {
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
 	controller.header = controller.newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available")
 	controller.footer = controller.newPrimitive("[ESC]=go back   [Ctrl+C]=to exit")
@@ -84,9 +103,5 @@ func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFun
 		AddItem(grid, 0, 1, true).
 		AddItem(controller.footer, 1, 0, true)
 
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		controller.setNewFocus(event)
-		return event
-	})
 	return controller, page, grid
 }
