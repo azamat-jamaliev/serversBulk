@@ -11,6 +11,8 @@ import (
 
 	// _ "net/http/pprof"
 
+	// "github.com/gdamore/tcell"
+
 	"github.com/rivo/tview"
 )
 
@@ -68,6 +70,7 @@ func main() {
 	envExitHandler := func() {
 		pagesView.SwitchToPage(pages.PageNameMain)
 		pagesView.RemovePage(pages.PageNameEditEnv)
+		mainPageController.SetDefaultFocus()
 	}
 	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
 		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, config, envExitHandler), true)

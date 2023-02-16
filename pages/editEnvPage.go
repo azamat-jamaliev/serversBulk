@@ -4,6 +4,7 @@ import (
 	"serversBulk/modules/configProvider"
 	"strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -33,11 +34,21 @@ func EditEnvPage(appObj *tview.Application, env *configProvider.ConfigEnvironmen
 				AddInputField("Bastion Identity File: ", srv.BastionIdentityFile, 60, nil, nil)
 		}
 	}
-	editEnvForm.AddButton(" -      Add Servers        - ", nil).
-		AddButton("Save", nil).
-		AddButton("Cancel", func() {
-			exitHandlerFunc()
-		})
+	// editEnvForm.AddButton(" -      Add Servers        - ", nil).
+	// 	AddButton("Save", nil).
+	// 	AddButton("Cancel", func() {
+	// 		exitHandlerFunc()
+	// 	})
+	page, _ := NewPageWithFooter(editEnvForm, "[Ctrl+Z]=Cancel&Exit [tab]=next field [Ctrl+A]=Add Servers group [Ctrl+S]=Save&Exit")
 
-	return editEnvForm
+	appObj.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlZ {
+			exitHandlerFunc()
+		} else if event.Key() == tcell.KeyCtrlS {
+			exitHandlerFunc()
+		}
+		return event
+	})
+
+	return page
 }

@@ -74,12 +74,6 @@ func (pCtrl *PageController) SetDefaultFocus() {
 	})
 }
 
-func (pCtrl *PageController) newPrimitive(text string) tview.Primitive {
-	return tview.NewTextView().
-		SetTextAlign(tview.AlignCenter).
-		SetText(text)
-}
-
 func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()) *PageController {
 	p := &PageController{
 		focusOrder: []tview.Primitive{},
@@ -90,18 +84,24 @@ func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()
 }
 func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*PageController, *tview.Flex, *tview.Grid) {
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
-	controller.header = controller.newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available")
-	controller.footer = controller.newPrimitive("[ESC]=go back   [Ctrl+C]=to exit")
+	controller.header = newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available")
 	controller.lastItemExitHandler = lastItemSelectedHandlerFunc
 	grid := tview.NewGrid().
 		SetRows(2, 0).
 		SetColumns(30, 0).
 		SetBorders(true).
 		AddItem(controller.header, 0, 0, 1, 2, 0, 0, false)
-	page := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(grid, 0, 1, true).
-		AddItem(controller.footer, 1, 0, true)
+	page, f := NewPageWithFooter(grid, "[ESC]=go back   [Ctrl+C]=to exit")
+	controller.footer = f
 
 	return controller, page, grid
+}
+func NewPageWithFooter(mainpart tview.Primitive, footer string) (*tview.Flex, tview.Primitive) {
+	f := newPrimitive(footer)
+	page := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(mainpart, 0, 1, true).
+		AddItem(f, 1, 0, true)
+
+	return page, f
 }
