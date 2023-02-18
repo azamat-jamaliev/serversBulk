@@ -3,8 +3,8 @@ package pages
 import (
 	"fmt"
 	"math"
-	"serversBulk/modules/configProvider"
-	"serversBulk/modules/tasks"
+	"sebulk/modules/configProvider"
+	"sebulk/modules/tasks"
 	"strconv"
 
 	"github.com/gdamore/tcell/v2"
@@ -14,7 +14,8 @@ import (
 // *tview.Application, getServerLogFunc func(server string) string)
 func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	doneHandlerFunc func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string),
-	editHandlerFunc func(config *configProvider.ConfigEnvironmentType)) (tview.Primitive, *PageController) {
+	editHandlerFunc func(config *configProvider.ConfigEnvironmentType),
+	addHandlerFunc func()) (tview.Primitive, *PageController) {
 
 	var searchField, commandField, mtimeField *tview.InputField
 	var taskName tasks.TaskType
@@ -29,17 +30,21 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 
 	ctrl, page, grid := NewMainPageController(appObj, lastItemSelectedHandler)
 
-	for _, env := range config.Environments {
-		serverLine := ""
-		for _, server := range env.Servers {
-			ipLine := ""
-			for _, ipAddr := range server.IpAddresses {
-				ipLine = fmt.Sprintf("%s %s", ipLine, ipAddr)
+	ctrl.ReloadList = func() {
+		serversList.Clear()
+		for _, env := range config.Environments {
+			serverLine := ""
+			for _, server := range env.Servers {
+				ipLine := ""
+				for _, ipAddr := range server.IpAddresses {
+					ipLine = fmt.Sprintf("%s %s", ipLine, ipAddr)
+				}
+				serverLine = fmt.Sprintf("%s %s=[%s]", serverLine, server.Name, ipLine)
 			}
-			serverLine = fmt.Sprintf("%s %s=[%s]", serverLine, server.Name, ipLine)
+			serversList.AddItem(env.Name, serverLine, 0, nil)
 		}
-		serversList.AddItem(env.Name, serverLine, 0, nil)
 	}
+	ctrl.ReloadList()
 
 	searchField = tview.NewInputField().
 		SetLabel("Quick search: ").
@@ -121,6 +126,8 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	serversList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlE {
 			editHandlerFunc(&config.Environments[serversList.GetCurrentItem()])
+		} else if event.Key() == tcell.KeyCtrlA {
+			addHandlerFunc()
 		}
 		return event
 	})

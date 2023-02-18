@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"serversBulk/modules/configProvider"
+	"sebulk/modules/configProvider"
 	"time"
 
 	"github.com/pkg/sftp"

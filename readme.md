@@ -1,5 +1,5 @@
-# serversBulk
-The serversBulk allows to 
+# sebulk
+The sebulk allows to 
 - quick serach in the logs of different nodes and servers when Grafana is not available :-) 
 - download all logs
 - upload file
@@ -24,27 +24,27 @@ env GOOS=linux GOARCH=amd64 go build -o ./build .
 ```
 ### Cross platform: Build for Windows
 ```sh
-env GOOS=windows GOARCH=386 go build -o ./build/serversBulk.exe .
-env GOOS=windows GOARCH=amd64 go build -o ./build/serversBulkTUI.exe .
+env GOOS=windows GOARCH=386 go build -o ./build/sebulk.exe .
+env GOOS=windows GOARCH=amd64 go build -o ./build/sebulk.exe .
 ```
 
 ## Execute
 ### to execute command
 ```
- .\serversBulk.exe -c .\win_serversBulk_config_PPT.json --servers SERVER_GROUP_NAME -e "ls -l /var/tmp"
+ .\sebulk.exe -c .\win_sebulk_config_PPT.json --servers SERVER_GROUP_NAME -e "ls -l /var/tmp"
 ```
 ### for search
 ```
-./serversBulk -s "\[ERROR" > ~/Downloads/output.txt
+./sebulk -s "\[ERROR" > ~/Downloads/output.txt
 ```
 ### for logs download
 ```
-./serversBulk --servers SERVER_GROUP_NAME -c ./config/serversBulk_config_SVT.json  -d ~/Downloads
+./sebulk --servers SERVER_GROUP_NAME -c ./config/sebulk_config_SVT.json  -d ~/Downloads
 ```
 
 ### upload file to servers
 ```
-./serversBulk -c ./config/serversBulk_config_SVT.json  -u ~/Downloads/file_to_upload.txt
+./sebulk -c ./config/sebulk_config_SVT.json  -u ~/Downloads/file_to_upload.txt
 ```
 __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist uploading will fail for the server)
 
@@ -58,9 +58,8 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
         {
             "name": "SERVER_GROUP_NAME",
             "description": "",
-            "logFolder": "/var/tmp/logs",
+            "logFolders": ["/var/tmp/logs"],
             "logFilePattern": "*.log",
-            "searchInSubfolders": true,
             "BastionServer": "192.XXX.XXX.1",
             "BastionLogin": "YourLoginforBastion",
             "BastionPassword": "YourPasswordforBastion",
@@ -82,9 +81,8 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
         {
             "name": "SERVER_GROUP_NAME",
             "description": "",
-            "logFolder": "/var/tmp/logs",
+            "logFolders": ["/var/tmp/logs"],
             "logFilePattern": "*.log",
-            "searchInSubfolders": true,
             "BastionServer": "192.XXX.XXX.1",
             "BastionLogin": "YourLoginforBastion",
             "BastionIdentityFile": "/Users/username/.ssh/key_rsa",
@@ -105,9 +103,8 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
         {
             "name": "SERVER_GROUP_NAME",
             "description": "",
-            "logFolder": "/var/tmp/logs",
+            "logFolders": ["/var/tmp/logs"],
             "logFilePattern": "*.log",
-            "searchInSubfolders": true,
             "login": "YourLoginToTheServerGroup",
             "passowrd": "YourLoginToTheServerGroup",
             "ipAddresses": [

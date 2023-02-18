@@ -15,6 +15,7 @@ type PageController struct {
 	header              tview.Primitive
 	footer              tview.Primitive
 	lastItemExitHandler func()
+	ReloadList          func()
 }
 type FocusChangeDirection string
 

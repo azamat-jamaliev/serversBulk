@@ -1,7 +1,7 @@
 package pages
 
 import (
-	"serversBulk/modules/tasks"
+	"sebulk/modules/tasks"
 
 	"github.com/rivo/tview"
 )

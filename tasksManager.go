@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"serversBulk/modules/configProvider"
-	"serversBulk/modules/sshHelper"
-	"serversBulk/modules/tasks"
+	"sebulk/modules/configProvider"
+	"sebulk/modules/sshHelper"
+	"sebulk/modules/tasks"
 )
 
 type CurrentFileForDownloading struct {

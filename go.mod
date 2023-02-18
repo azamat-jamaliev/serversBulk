@@ -1,4 +1,4 @@
-module serversBulk
+module sebulk
 
 go 1.17
 

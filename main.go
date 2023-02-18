@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"serversBulk/modules/configProvider"
-	"serversBulk/modules/tasks"
-	"serversBulk/pages"
+	"sebulk/modules/configProvider"
+	"sebulk/modules/tasks"
+	"sebulk/pages"
 
 	// _ "net/http/pprof"
 
@@ -45,7 +45,7 @@ func main() {
 	// go http.ListenAndServe("localhost:8080", nil)
 
 	// TRACE - have not found how to
-	// file, _ := os.Create("./serversBulk_trace.out")
+	// file, _ := os.Create("./sebulk_trace.out")
 	// tracerWriter := bufio.NewWriter(file)
 	// trace.Start(tracerWriter)
 	// defer trace.Stop()
@@ -57,7 +57,7 @@ func main() {
 	}
 	configPath := filepath.Dir(ex)
 	// configPath = "./build"
-	configPath = path.Join(configPath, "serversBulk_config.json")
+	configPath = path.Join(configPath, "sebulk_config.json")
 	fmt.Println(configPath)
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
@@ -72,8 +72,21 @@ func main() {
 		pagesView.RemovePage(pages.PageNameEditEnv)
 		mainPageController.SetDefaultFocus()
 	}
+	envSaveHandler := func() {
+		pagesView.SwitchToPage(pages.PageNameMain)
+		pagesView.RemovePage(pages.PageNameEditEnv)
+		mainPageController.SetDefaultFocus()
+		configProvider.SaveFileConfig(&configPath, config)
+		mainPageController.ReloadList()
+		// app.Draw()
+	}
 	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
-		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, config, envExitHandler), true)
+		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, config, envExitHandler, envSaveHandler), true)
+	}
+	configAddHandler := func() {
+		envConf := configProvider.ConfigEnvironmentType{}
+		config.Environments = append(config.Environments, envConf)
+		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, &config.Environments[len(config.Environments)-1], envExitHandler, envSaveHandler), true)
 	}
 	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
 		pagesView.SwitchToPage(pages.PageNameResults)
@@ -82,7 +95,7 @@ func main() {
 	}
 
 	resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog)
-	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler)
+	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 
 	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {

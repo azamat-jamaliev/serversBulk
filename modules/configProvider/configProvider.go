@@ -2,6 +2,7 @@ package configProvider
 
 import (
 	"encoding/json"
+	"io/fs"
 	"io/ioutil"
 	"os"
 )
@@ -50,4 +51,13 @@ func GetFileConfig(jsonFileName string) (ConfigFileType, error) {
 		err = json.Unmarshal(jsonFileBytes, &config)
 	}
 	return config, err
+}
+func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(*jsonFileName, bytes, fs.ModeSticky); err != nil {
+		panic(err)
+	}
 }

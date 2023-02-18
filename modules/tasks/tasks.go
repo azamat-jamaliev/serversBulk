@@ -1,6 +1,6 @@
 package tasks
 
-import "serversBulk/modules/configProvider"
+import "sebulk/modules/configProvider"
 
 type TaskType string
 
