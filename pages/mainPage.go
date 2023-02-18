@@ -112,8 +112,8 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		SetDirection(tview.FlexRow).
 		AddItem(ctrl.addFocus(commandField), 1, 1, true).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexColumn).
-			AddItem(ctrl.addFocus(mtimeField), 0, 1, true).
-			AddItem(mtimeInfoLabel, 0, 0, true), 1, 1, true).
+			AddItem(ctrl.addFocus(mtimeField), 19, 1, true).
+			AddItem(mtimeInfoLabel, 0, 1, true), 1, 1, true).
 		AddItem(tview.NewTextView().
 			SetTextAlign(tview.AlignLeft).
 			SetText(" Select Environment:"), 1, 1, true).

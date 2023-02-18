@@ -2,7 +2,6 @@ package configProvider
 
 import (
 	"encoding/json"
-	"io/fs"
 	"io/ioutil"
 	"os"
 )
@@ -26,7 +25,7 @@ type ConfigEnvironmentType struct {
 }
 type ConfigFileType struct {
 	DownloadFolder string
-	LogsMtime      *float32
+	LogsMtime      *float64
 	Environments   []ConfigEnvironmentType
 }
 
@@ -57,7 +56,7 @@ func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile(*jsonFileName, bytes, fs.ModeSticky); err != nil {
+	if err := ioutil.WriteFile(*jsonFileName, bytes, 0644); err != nil {
 		panic(err)
 	}
 }

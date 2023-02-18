@@ -2,10 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"sebulk/modules/configProvider"
 	"sebulk/modules/tasks"
-
-	"github.com/fatih/color"
 )
 
 func executeWithParams(newLogHandler func(server, log string),
@@ -21,7 +20,7 @@ func executeWithParams(newLogHandler func(server, log string),
 	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
 
-	color.New(color.FgYellow).Println("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
+	fmt.Printf("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
 
 	cargo := ""
 	switch {

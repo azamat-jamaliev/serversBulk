@@ -11,8 +11,6 @@ import (
 
 	// _ "net/http/pprof"
 
-	// "github.com/gdamore/tcell"
-
 	"github.com/rivo/tview"
 )
 
@@ -61,7 +59,21 @@ func main() {
 	fmt.Println(configPath)
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
-		panic(err)
+		f := -0.2
+		config = configProvider.ConfigFileType{
+			DownloadFolder: "~/",
+			LogsMtime:      &f,
+			Environments: []configProvider.ConfigEnvironmentType{{
+				Name: "Example_Env_name",
+				Servers: []configProvider.ConfigServerType{{
+					Name:           "Server_Group",
+					IpAddresses:    []string{"123.123.123.123"},
+					LogFolders:     []string{"/var/logs"},
+					LogFilePattern: "*.log",
+					Login:          "userName",
+				}},
+			}},
+		}
 	}
 
 	app := tview.NewApplication()
