@@ -85,7 +85,7 @@ func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()
 }
 func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*PageController, *tview.Flex, *tview.Grid) {
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
-	controller.header = newPrimitive("!!! SERVERS BULK !!!\nworkd when Grafana or Ansible is not available")
+	controller.header = newPrimitive("!!! SeBulk !!! \nworks when GrayLog or Ansible is not available")
 	controller.lastItemExitHandler = lastItemSelectedHandlerFunc
 	grid := tview.NewGrid().
 		SetRows(2, 0).

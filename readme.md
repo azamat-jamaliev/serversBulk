@@ -1,34 +1,14 @@
-# sebulk
+# SeBulk
 The sebulk allows to 
-- quick serach in the logs of different nodes and servers when Grafana is not available :-) 
-- download all logs
-- upload file
-- and execute commands on the servers simalteniusly when Ansible is not available.
+- quick serach in the logs of different nodes and servers when GrayLog is not available
+- download all logs (in case if you need to attach logs from all server to ticket for DEV team)
+- upload file (if you have hotfix which should be alloaded to all nodes / servers)
+- and execute commands on the servers simalteniusly when Ansible is not available
 
-## Build
+UI has been added (not required to learn cli parameters any more):
+![enter image description here](./doc/pictures/mainPage.png)
 
-if your you're building in the same platform you can use simple:
-```sh
-go build -o ./build .
-```
-for cross platform building you can use:
-```sh
-env GOOS=target-OS GOARCH=target-architecture go build 
-```
-more details in: https://www.digitalocean.com/community/tutorials/how-to-build-go-executables-for-multiple-platforms-on-ubuntu-16-04
-
-
-### Cross platform: Build for Linux
-```sh
-env GOOS=linux GOARCH=amd64 go build -o ./build .
-```
-### Cross platform: Build for Windows
-```sh
-env GOOS=windows GOARCH=386 go build -o ./build/sebulk.exe .
-env GOOS=windows GOARCH=amd64 go build -o ./build/sebulk.exe .
-```
-
-## Execute
+## Execute via CLI
 ### to execute command
 ```
  .\sebulk.exe -c .\win_sebulk_config_PPT.json --servers SERVER_GROUP_NAME -e "ls -l /var/tmp"
@@ -116,3 +96,25 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
 }
 ```
 
+## Build
+
+if your you're building in the same platform you can use simple:
+```sh
+go build -o ./build .
+```
+for cross platform building you can use:
+```sh
+env GOOS=target-OS GOARCH=target-architecture go build 
+```
+more details in: https://www.digitalocean.com/community/tutorials/how-to-build-go-executables-for-multiple-platforms-on-ubuntu-16-04
+
+
+### Cross platform: Build for Linux
+```sh
+env GOOS=linux GOARCH=amd64 go build -o ./build .
+```
+### Cross platform: Build for Windows
+```sh
+env GOOS=windows GOARCH=386 go build -o ./build/sebulk.exe .
+env GOOS=windows GOARCH=amd64 go build -o ./build/sebulk.exe .
+```
