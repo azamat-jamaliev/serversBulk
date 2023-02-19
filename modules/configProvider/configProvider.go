@@ -4,15 +4,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"serversBulk/modules/logHelper"
 )
 
 type ConfigServerType struct {
 	Name                string
-	Description         string
-	LogFolder           string
+	LogFolders          []string
 	LogFilePattern      string
-	SearchInSubfolders  bool
 	Login               string
 	Passowrd            string
 	IdentityFile        string
@@ -22,22 +19,44 @@ type ConfigServerType struct {
 	BastionPassword     string
 	IpAddresses         []string
 }
-type ConfigFileType struct {
+type ConfigEnvironmentType struct {
+	Name    string //environment name
 	Servers []ConfigServerType
 }
+type ConfigFileType struct {
+	DownloadFolder string
+	LogsMtime      *float64
+	Environments   []ConfigEnvironmentType
+}
 
-func GetConfig(jsonFileName *string) ConfigFileType {
-	logHelper.LogPrintf("loading configuration file [%s]", *jsonFileName)
+func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
 	jsonFile, err := os.Open(*jsonFileName)
 	if err != nil {
-		logHelper.ErrFatalln(err, "Cannot Open Config file")
+		panic(err)
 	}
 
-	var config ConfigFileType
+	var config ConfigEnvironmentType
 	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
 	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
-		logHelper.ErrFatalln(err, "Cannot Parse Config file")
+		panic(err)
 	}
-	logHelper.LogPrintf("config loaded succesfully")
 	return config
+}
+func GetFileConfig(jsonFileName string) (ConfigFileType, error) {
+	var config ConfigFileType
+	jsonFile, err := os.Open(jsonFileName)
+	if err == nil {
+		jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
+		err = json.Unmarshal(jsonFileBytes, &config)
+	}
+	return config, err
+}
+func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
+	bytes, err := json.Marshal(conf)
+	if err != nil {
+		panic(err)
+	}
+	if err := ioutil.WriteFile(*jsonFileName, bytes, 0644); err != nil {
+		panic(err)
+	}
 }
