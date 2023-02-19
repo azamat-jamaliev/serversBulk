@@ -18,15 +18,13 @@ func DisplayServerTaskStatus(server, status string) {
 		}
 		// tasks.Failed
 	} else {
-		serverStatusList.AddItem(server, status, 0, func() {
-			serverLogView.SetText(getServerLog(server))
-			// app.SetFocus(serverLogView)
-		})
+		serverStatusList.AddItem(server, status, 0, nil)
 		// app.SetFocus(serverStatusList)
 	}
 }
 func DisplayServerLog(server, newText string) {
 	serverLogView.SetText(newText)
+	// fmt.Println("NewText", newText)
 	app.Draw()
 }
 func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) (tview.Primitive, *PageController) {
@@ -35,6 +33,9 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()
 	getServerLog = getServerLogFunc
+	serverStatusList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
+		serverLogView.SetText(getServerLog(mainText))
+	})
 
 	grid.AddItem(ctrl.addFocus(serverStatusList), 1, 0, 1, 1, 0, 20, true).
 		AddItem(ctrl.addFocus(serverLogView), 1, 1, 1, 1, 0, 60, true)
