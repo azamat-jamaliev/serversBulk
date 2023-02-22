@@ -29,7 +29,7 @@ func ServerLogHandler(server, logRecord string) {
 	} else {
 		ServerLog[server] = logRecord
 	}
-	pages.DisplayServerLog(server, ServerLog[server])
+	pages.DisplayServerLog(ServerLog[server])
 }
 func GetServerLog(server string) string {
 	if val, ok := ServerLog[server]; ok {

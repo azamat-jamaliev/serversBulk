@@ -48,9 +48,8 @@ func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 	if d != 0 {
 		for i, item := range pCtrl.focusOrder {
 			if item == curAppFocus {
-				if i+d >= len(pCtrl.focusOrder) {
-					// doneHandlerFunc()
-					// return focusOrder[0]
+				// Go next page/action only by Enter button
+				if i+d >= len(pCtrl.focusOrder) && event.Key() == tcell.KeyEnter {
 					if pCtrl.lastItemExitHandler != nil {
 						pCtrl.lastItemExitHandler()
 					}

@@ -16,16 +16,20 @@ func DisplayServerTaskStatus(server, status string) {
 		if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
 			serverStatusList.SetItemText(serverItems[0], server, status)
 		}
-		// tasks.Failed
 	} else {
 		serverStatusList.AddItem(server, status, 0, nil)
-		// app.SetFocus(serverStatusList)
 	}
 }
-func DisplayServerLog(server, newText string) {
-	serverLogView.SetText(newText)
-	// fmt.Println("NewText", newText)
+func DisplayServerLog(newText string) {
+	setServerLogTest(newText)
 	app.Draw()
+}
+func setServerLogTest(newText string) {
+	if len(newText) < 5000 {
+		serverLogView.SetText(newText)
+	} else {
+		serverLogView.SetText("The content is too big - Please use [CRTL+S] to seve it into the file")
+	}
 }
 func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) (tview.Primitive, *PageController) {
 	ctrl, page, grid := NewMainPageController(appObj, func() {})
@@ -34,15 +38,11 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	serverStatusList = tview.NewList()
 	getServerLog = getServerLogFunc
 	serverStatusList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
-		serverLogView.SetText(getServerLog(mainText))
+		setServerLogTest(getServerLog(mainText))
 	})
 
 	grid.AddItem(ctrl.addFocus(serverStatusList), 1, 0, 1, 1, 0, 20, true).
 		AddItem(ctrl.addFocus(serverLogView), 1, 1, 1, 1, 0, 60, true)
-
-	// serverLogView.SetDoneFunc(func(key tcell.Key) {
-	// 	app.SetFocus(serverStatusList)
-	// })
 
 	return page, ctrl
 }
