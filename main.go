@@ -61,18 +61,30 @@ func main() {
 	if err != nil {
 		f := -0.2
 		config = configProvider.ConfigFileType{
-			DownloadFolder: "~/",
+			DownloadFolder: ".",
 			LogsMtime:      &f,
-			Environments: []configProvider.ConfigEnvironmentType{{
-				Name: "Example_Env_name",
-				Servers: []configProvider.ConfigServerType{{
-					Name:           "Server_Group",
-					IpAddresses:    []string{"123.123.123.123"},
-					LogFolders:     []string{"/var/logs"},
-					LogFilePattern: "*.log",
-					Login:          "userName",
+			Environments: []configProvider.ConfigEnvironmentType{
+				{
+					Name: "Example_Env_name",
+					Servers: []configProvider.ConfigServerType{{
+						Name:           "Server_Group",
+						IpAddresses:    []string{"123.123.123.123"},
+						LogFolders:     []string{"/var/log"},
+						LogFilePattern: "*.log",
+						Login:          "userName",
+					}},
+				},
+				{
+					Name: "local_test",
+					Servers: []configProvider.ConfigServerType{{
+						Name:           "sebulk_test_ubuntu",
+						IpAddresses:    []string{"127.0.0.1"},
+						LogFolders:     []string{"/var/log"},
+						LogFilePattern: "*.log",
+						Login:          "test",
+						Passowrd:       "test",
+					}},
 				}},
-			}},
 		}
 	}
 
@@ -106,7 +118,7 @@ func main() {
 		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 	}
 
-	resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog)
+	resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, envExitHandler)
 	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 

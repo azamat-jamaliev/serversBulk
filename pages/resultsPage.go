@@ -3,6 +3,7 @@ package pages
 import (
 	"sebulk/modules/tasks"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -31,7 +32,7 @@ func setServerLogTest(newText string) {
 		serverLogView.SetText("The content is too big - Please use [CRTL+S] to seve it into the file")
 	}
 }
-func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string) (tview.Primitive, *PageController) {
+func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func()) (tview.Primitive, *PageController) {
 	ctrl, page, grid := NewMainPageController(appObj, func() {})
 
 	serverLogView = tview.NewTextView()
@@ -39,6 +40,12 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	getServerLog = getServerLogFunc
 	serverStatusList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		setServerLogTest(getServerLog(mainText))
+	})
+	serverStatusList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyEsc {
+			exitHandlerFunc()
+		}
+		return event
 	})
 
 	grid.AddItem(ctrl.addFocus(serverStatusList), 1, 0, 1, 1, 0, 20, true).
