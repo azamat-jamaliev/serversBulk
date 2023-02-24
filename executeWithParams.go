@@ -23,6 +23,7 @@ func executeWithParams(newLogHandler func(server, log string),
 	fmt.Printf("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
 
 	cargo := ""
+	cargo2 := "/var/log/"
 	switch {
 	case *grepFor != "":
 		taskName = tasks.TypeGrepInLogs
@@ -44,7 +45,7 @@ func executeWithParams(newLogHandler func(server, log string),
 		taskName,
 		*serversName,
 		*modifTime,
-		cargo, newLogHandler, newStatusHandler)
+		cargo, cargo2, newLogHandler, newStatusHandler)
 
 	return true
 }

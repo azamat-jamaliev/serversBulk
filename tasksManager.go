@@ -35,7 +35,7 @@ func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 	taskName tasks.TaskType,
 	serversName,
 	modifTime,
-	cargo string,
+	cargo, cargo2 string,
 	newLogHandler func(server, log string),
 	newStatusHandler func(server, status string)) {
 

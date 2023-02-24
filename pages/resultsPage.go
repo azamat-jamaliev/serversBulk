@@ -41,7 +41,7 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	serverStatusList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
 		setServerLogTest(getServerLog(mainText))
 	})
-	serverStatusList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if exitHandlerFunc != nil && event.Key() == tcell.KeyEsc {
 			exitHandlerFunc()
 		} else if saveLogsHandlerFunc != nil && event.Key() == tcell.KeyCtrlS {

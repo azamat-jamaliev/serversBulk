@@ -23,6 +23,9 @@ func (pCtrl *PageController) addFocus(primitive tview.Primitive) tview.Primitive
 	pCtrl.focusOrder = append(pCtrl.focusOrder, primitive)
 	return primitive
 }
+func (pCtrl *PageController) clearFocus() {
+	pCtrl.focusOrder = []tview.Primitive{}
+}
 
 func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 	d := 0
