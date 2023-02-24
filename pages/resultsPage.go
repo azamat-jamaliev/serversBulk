@@ -32,7 +32,7 @@ func setServerLogTest(newText string) {
 		serverLogView.SetText("The content is too big - Please use [CRTL+S] to seve it into the file")
 	}
 }
-func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func()) (tview.Primitive, *PageController) {
+func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func(), saveLogsHandlerFunc func()) (tview.Primitive, *PageController) {
 	ctrl, page, grid := NewMainPageController(appObj, func() {})
 
 	serverLogView = tview.NewTextView()
@@ -42,8 +42,10 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 		setServerLogTest(getServerLog(mainText))
 	})
 	serverStatusList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEsc {
+		if exitHandlerFunc != nil && event.Key() == tcell.KeyEsc {
 			exitHandlerFunc()
+		} else if saveLogsHandlerFunc != nil && event.Key() == tcell.KeyCtrlS {
+			saveLogsHandlerFunc()
 		}
 		return event
 	})

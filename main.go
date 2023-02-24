@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -117,16 +118,26 @@ func main() {
 		resultPageController.SetDefaultFocus()
 		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
 	}
+	saveServerLogHandler := func() {
+		for server, log := range ServerLog {
+			if len(server) > 0 {
+				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServerIP(server), "txt"))
+				if err := ioutil.WriteFile(fileName, []byte(log), 0644); err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
 
-	resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, envExitHandler)
 	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 
 	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {
-		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
-		pagesView.SwitchToPage(pages.PageNameResults)
+		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, nil, saveServerLogHandler)
+		pagesView.AddPage(pages.PageNameResults, resultsPage, true, true)
 		resultPageController.SetDefaultFocus()
 	} else {
+		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, envExitHandler, saveServerLogHandler)
 		pagesView.AddPage(pages.PageNameMain, mainPage, true, true)
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}

@@ -147,8 +147,11 @@ func grepInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 	str, e := executeOnServer(&task.ConfigServer, task.Server, task.ExecuteCmd)
 	output <- *taskForChannel(&task, str, e, tasks.Finished, nil)
 }
+func fileNameFromServerIP(serverIp string) string {
+	return strings.ReplaceAll(serverIp, ".", "_")
+}
 func archiveLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
-	tarNamefile := fmt.Sprintf("~/%s.%s", strings.ReplaceAll(task.Server, ".", "_"), "tar")
+	tarNamefile := fmt.Sprintf("~/%s.%s", fileNameFromServerIP(task.Server), "tar")
 	cmd := fmt.Sprintf("cd %s", task.ConfigServer.LogFolders[0])
 	for _, folder := range task.ConfigServer.LogFolders {
 		cmd = fmt.Sprintf("%s; find %s ! -readable -prune -o -type f -iname \"%s\" -mtime %s -exec tar rvf %s {} \\;", cmd, folder, task.ConfigServer.LogFilePattern, task.ModifTime, tarNamefile)
