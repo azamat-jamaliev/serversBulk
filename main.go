@@ -113,10 +113,10 @@ func main() {
 		config.Environments = append(config.Environments, envConf)
 		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, &config.Environments[len(config.Environments)-1], envExitHandler, envSaveHandler), true)
 	}
-	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo string) {
+	configDoneHandler := func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo, cargo2 string) {
 		pagesView.SwitchToPage(pages.PageNameResults)
 		resultPageController.SetDefaultFocus()
-		go StartTaskForEnv(config, taskName, "", mtime, cargo, ServerLogHandler, ServerTaskStatusHandler)
+		go StartTaskForEnv(config, taskName, "", mtime, cargo, cargo2, ServerLogHandler, ServerTaskStatusHandler)
 	}
 	saveServerLogHandler := func() {
 		for server, log := range ServerLog {
