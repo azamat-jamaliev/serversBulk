@@ -29,6 +29,7 @@ type ServerTask struct {
 	Log            string
 	ModifTime      string
 	CommandCargo   string
+	CommandCargo2  string
 	ExecuteCmd     string
 	LocalFile      string
 	// GrepFor        string

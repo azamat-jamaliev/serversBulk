@@ -63,6 +63,7 @@ func main() {
 		f := -0.2
 		config = configProvider.ConfigFileType{
 			DownloadFolder: ".",
+			UploadFolder:   "/var/tmp",
 			LogsMtime:      &f,
 			Environments: []configProvider.ConfigEnvironmentType{
 				{

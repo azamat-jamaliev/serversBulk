@@ -60,11 +60,11 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	commandField = tview.NewInputField().
 		SetLabel("command: ").
 		SetPlaceholder("").
-		SetFieldWidth(30)
+		SetFieldWidth(80)
 	uploadToField = tview.NewInputField().
 		SetLabel("upload to: ").
 		SetPlaceholder("folder to upload i.e. /var/tmp").
-		SetFieldWidth(30)
+		SetFieldWidth(80).SetText(config.UploadFolder)
 	mtimeInfoLabel := tview.NewTextView().SetTextAlign(tview.AlignLeft)
 	mtimeField = tview.NewInputField().
 		SetLabel("less than: ").

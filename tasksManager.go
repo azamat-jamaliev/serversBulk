@@ -50,11 +50,12 @@ func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 			for _, serverIp := range serverConf.IpAddresses {
 				go func(serverIp string, serverConf configProvider.ConfigServerType) {
 					task := tasks.ServerTask{Status: tasks.Planned,
-						Type:         taskName,
-						ModifTime:    modifTime,
-						CommandCargo: cargo,
-						ConfigServer: serverConf,
-						Server:       serverIp}
+						Type:          taskName,
+						ModifTime:     modifTime,
+						CommandCargo:  cargo,
+						CommandCargo2: cargo2,
+						ConfigServer:  serverConf,
+						Server:        serverIp}
 					tasksChannel <- task
 				}(serverIp, serverConf)
 
@@ -229,7 +230,7 @@ func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
 	}
 }
 func uploadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) {
-	destFilePath := path.Join("/var/tmp/", path.Base(task.CommandCargo))
+	destFilePath := path.Join(task.CommandCargo2, path.Base(task.CommandCargo))
 
 	sshAdv := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	defer sshAdv.Close()

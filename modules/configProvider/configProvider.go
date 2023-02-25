@@ -25,6 +25,7 @@ type ConfigEnvironmentType struct {
 }
 type ConfigFileType struct {
 	DownloadFolder string
+	UploadFolder   string
 	LogsMtime      *float64
 	Environments   []ConfigEnvironmentType
 }
