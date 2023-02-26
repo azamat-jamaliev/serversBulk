@@ -60,34 +60,7 @@ func main() {
 	fmt.Println(configPath)
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
-		f := -0.2
-		config = configProvider.ConfigFileType{
-			DownloadFolder: ".",
-			UploadFolder:   "/var/tmp",
-			LogsMtime:      &f,
-			Environments: []configProvider.ConfigEnvironmentType{
-				{
-					Name: "Example_Env_name",
-					Servers: []configProvider.ConfigServerType{{
-						Name:           "Server_Group",
-						IpAddresses:    []string{"123.123.123.123"},
-						LogFolders:     []string{"/var/log"},
-						LogFilePattern: "*.log",
-						Login:          "userName",
-					}},
-				},
-				{
-					Name: "local_test",
-					Servers: []configProvider.ConfigServerType{{
-						Name:           "sebulk_test_ubuntu",
-						IpAddresses:    []string{"127.0.0.1"},
-						LogFolders:     []string{"/var/log"},
-						LogFilePattern: "*.log",
-						Login:          "test",
-						Passowrd:       "test",
-					}},
-				}},
-		}
+		config = configProvider.GetDefaultConfig()
 	}
 
 	app := tview.NewApplication()

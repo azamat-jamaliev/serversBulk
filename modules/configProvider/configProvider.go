@@ -61,3 +61,23 @@ func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
 		panic(err)
 	}
 }
+func GetDefaultConfig() ConfigFileType {
+	f := -0.2
+	return ConfigFileType{
+		DownloadFolder: ".",
+		UploadFolder:   "/var/tmp",
+		LogsMtime:      &f,
+		Environments: []ConfigEnvironmentType{
+			{
+				Name: "EXAMPLE_local_test",
+				Servers: []ConfigServerType{{
+					Name:           "sebulk_test_ubuntu",
+					IpAddresses:    []string{"127.0.0.1"},
+					LogFolders:     []string{"/var/log"},
+					LogFilePattern: "*.log*",
+					Login:          "test",
+					Passowrd:       "test",
+				}},
+			}},
+	}
+}
