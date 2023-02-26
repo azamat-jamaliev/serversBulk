@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 )
 
 // exists returns whether the given file or directory exists
@@ -24,30 +25,36 @@ type SshCreds struct {
 	Login, Password string
 }
 
-func getGetAnsibleSshCreds() (map[string]SshCreds, error) {
-	ansibleDir := ""
-	GLOBAL_GROUP_VARS_DIR := "00.global/group_vars/all"
+func getValueFromYamlFile(attrName, yamlFileContent string) string {
+	val := getMatchingValueFromYamlFile(fmt.Sprintf(`(?i)%s:\s*['"]([^"']+)`, attrName), yamlFileContent)
+	if len(val) < 1 {
+		val = getMatchingValueFromYamlFile(fmt.Sprintf(`(?i)%s:\s*([^\s\n]+)`, attrName), yamlFileContent)
+	}
+	return val
+}
+func getMatchingValueFromYamlFile(searchMatching, yamlFileContent string) string {
+	fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
+	reLogin := regexp.MustCompile(searchMatching)
+	matchesLogin := reLogin.FindStringSubmatch(yamlFileContent)
+	if len(matchesLogin) > 1 {
+		return matchesLogin[1]
+	}
+	return ""
+}
+func getServerTypeNameFromFile(filename string) string {
+	ext := path.Ext(filename)
+	return strings.ToLower(filename[0 : len(filename)-len(ext)])
+}
+func getGetAnsibleSshCreds(ansibleGlobalDir string) (map[string]SshCreds, error) {
 	result := map[string]SshCreds{}
 
-	if ansibleDir = "./ansible-inventory/CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
-		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
-	} else if ansibleDir = "./CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
-		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
-	}
-	ansibleGlobalDir := path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)
 	globalDirFiles, err := os.ReadDir(ansibleGlobalDir)
 	if err != nil {
 		return nil, err
 	}
 	for _, f := range globalDirFiles {
 		if !f.IsDir() {
-			fi, err := f.Info()
-			if err != nil {
-				return nil, err
-			}
-			filename := fi.Name()
-			ext := path.Ext(filename)
-			serverName := filename[0 : len(filename)-len(ext)]
+			serverName := getServerTypeNameFromFile(f.Name())
 
 			yamlFile, err := os.Open(path.Join(ansibleGlobalDir, f.Name()))
 			if err != nil {
@@ -55,79 +62,71 @@ func getGetAnsibleSshCreds() (map[string]SshCreds, error) {
 			}
 			bytes, _ := ioutil.ReadAll(yamlFile)
 			yamlFileContent := string(bytes)
+			login := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
+			pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
 
-			searchSshLoginString := fmt.Sprintf(`(?i)%s_ansible_ssh_user:\s*['"]([^"']+)`, serverName)
-			fmt.Println("searchSshLoginString: ", searchSshLoginString)
-			reLogin := regexp.MustCompile(searchSshLoginString)
-			matchesLogin := reLogin.FindStringSubmatch(yamlFileContent)
-
-			searchSshPasswordString := fmt.Sprintf(`(?i)%s_ansible_ssh_pass:\s*['"]([^"']+)`, serverName)
-			fmt.Println("searchSshPasswordString: ", searchSshPasswordString)
-			rePassword := regexp.MustCompile(searchSshPasswordString)
-			matchesPassword := rePassword.FindStringSubmatch(yamlFileContent)
-
-			if len(matchesPassword) > 1 && len(matchesLogin) > 1 {
-				fmt.Println("Found SSH Login: ", matchesLogin[1])
-				fmt.Println("Found SSH password:", matchesPassword[1])
-				result[serverName] = SshCreds{Login: matchesLogin[1], Password: matchesPassword[1]}
-				// return matchesLogin[1], matchesPassword[1], nil
+			if len(login) > 1 && len(pass) > 1 {
+				result[serverName] = SshCreds{Login: login, Password: pass}
 			}
 		}
 	}
 	return result, nil
 }
 
-// func GetAnsibleFileConfig() (ConfigFileType, error) {
-// 	var config ConfigFileType
-// 	ansibleDir := ""
-// 	GLOBAL_GROUP_VARS_DIR := "00.global/group_vars/all"
-// 	ENV_GROUP_DIR_PREFIX := "30."
-// 	if ansibleDir = "./ansible-inventory/CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
-// 		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
-// 	} else if ansibleDir = "./CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
-// 		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
-// 	}
-// 	ansibleGlobalDir := path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)
-// 	globalDirFiles, err := os.ReadDir(ansibleGlobalDir)
-// 	if err != nil {
-// 		return config, err
-// 	}
-// 	for _, f := range globalDirFiles {
-// 		if !f.IsDir() {
-// 			fi, err := f.Info()
-// 			if err != nil {
-// 				return config, err
-// 			}
-// 			searchSshLoginString := fmt.Sprintf(`%s_ansible_ssh_user:\s*['"]([^"']+)`, fi.Name())
-// 			var reLogin = regexp.MustCompile(searchSshLoginString)
-// 			jsonFile, err := os.Open(path.Join(ansibleGlobalDir, f.Name()))
-// 			if err != nil {
-// 				return config, err
-// 			}
-// 			bytes, _ := ioutil.ReadAll(jsonFile)
-// 			// err = json.Unmarshal(jsonFileBytes, &config)
-// 			matchesLogin := reLogin.FindStringSubmatch(string(bytes))
-// 			fmt.Printf("%s", matchesLogin[1])
+func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) {
+	config := GetDefaultConfig()
+	creds, err := getGetAnsibleSshCreds(path.Join(ansibleDir, "00.global/group_vars/all"))
+	if err != nil {
+		return config, err
+	}
 
-// 		}
-// 	}
+	dirs, err := os.ReadDir(ansibleDir)
+	if err != nil {
+		return config, err
+	}
+	for _, dir := range dirs {
+		if dir.IsDir() {
+			prefix := dir.Name()[0:len(envPrefix)]
+			if prefix == envPrefix && len(dir.Name()) > len(prefix) {
+				fmt.Println("Reading folder:", dir.Name())
+				env := ConfigEnvironmentType{
+					Name:    dir.Name()[len(envPrefix) : len(dir.Name())-len(envPrefix)],
+					Servers: []ConfigServerType{},
+				}
 
-// 	dirs, err := os.ReadDir(ansibleDir)
-// 	if err != nil {
-// 		return config, err
-// 	}
-// 	for _, dir := range dirs {
-// 		if dir.IsDir() {
-// 			fi, err := dir.Info()
-// 			if err != nil {
-// 				return config, err
-// 			}
-// 			prefix := fi.Name()[0:len(ENV_GROUP_DIR_PREFIX)]
-// 			if prefix == ENV_GROUP_DIR_PREFIX {
-// 				fmt.Println("Reading folder:", fi.Name())
-// 			}
-// 		}
-// 	}
+				envHostDir := path.Join(ansibleDir, dir.Name(), "host_vars")
+				files, err := os.ReadDir(envHostDir)
+				if err != nil {
+					return config, err
+				}
+				for _, f := range files {
+					if !f.IsDir() {
+						serverName := getServerTypeNameFromFile(f.Name())
+						if cred, ok := creds[serverName]; ok {
+							yamlFile, err := os.Open(path.Join(envHostDir, f.Name()))
+							if err != nil {
+								return config, err
+							}
+							bytes, _ := ioutil.ReadAll(yamlFile)
+							srvIp := getValueFromYamlFile("ansible_host", string(bytes))
+							if len(srvIp) > 0 {
+								serv := ConfigServerType{
+									Name:        serverName,
+									IpAddresses: []string{srvIp},
+									Login:       cred.Login,
+									Passowrd:    cred.Password,
+								}
+								env.Servers = append(env.Servers, serv)
+							}
+						}
+					}
+				}
+				if len(env.Servers) > 0 {
+					config.Environments = append(config.Environments, env)
+				}
+			}
+		}
+	}
 
-// 	return config, err
-// }
+	return config, err
+}
