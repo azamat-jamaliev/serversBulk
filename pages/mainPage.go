@@ -74,6 +74,11 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		SetChangedFunc(func(text string) {
 			if value, err := strconv.ParseFloat(text, 64); err == nil {
 				mtimeInfoLabel.SetText(fmt.Sprintf("~%vh. ago", math.Round(math.Abs(24*float64(value)))))
+				if value > 0 {
+					mtimeField.SetLabel("more than: ")
+				} else {
+					mtimeField.SetLabel("less than: ")
+				}
 			}
 		})
 	if config.LogsMtime != nil {

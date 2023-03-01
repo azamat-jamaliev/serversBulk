@@ -17,9 +17,6 @@ import (
 
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
 
-// map[string]string
-var currentPageNmae string
-
 func ServerTaskStatusHandler(server, status string) {
 	ServerStatus[server] = status
 	pages.DisplayServerTaskStatus(server, string(status))
@@ -60,7 +57,13 @@ func main() {
 	fmt.Println(configPath)
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
-		config = configProvider.GetDefaultConfig()
+		config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+		if err != nil {
+			config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+			if err != nil {
+				config = configProvider.GetDefaultConfig()
+			}
+		}
 	}
 
 	app := tview.NewApplication()
@@ -106,7 +109,7 @@ func main() {
 	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 
-	if executeWithParams(ServerLogHandler, ServerTaskStatusHandler) {
+	if mainExecWithParams(ServerLogHandler, ServerTaskStatusHandler) {
 		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, nil, saveServerLogHandler)
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, true)
 		resultPageController.SetDefaultFocus()

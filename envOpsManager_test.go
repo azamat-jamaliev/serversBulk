@@ -9,7 +9,7 @@ import (
 
 // TestHelloName calls greetings.Hello with a name, checking
 // for a valid return value.
-func TestTaskManager_Download(t *testing.T) {
+func TestEnvOpsManager_Download(t *testing.T) {
 	// taskName = tasks.TypeGrepInLogs
 	// taskName = tasks.TypeUploadFile
 

@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestGetGetAnsibleSshCreds(t *testing.T) {
+func TestGetGetAnsibleSshServerYamlDetails(t *testing.T) {
 
 	ansibleDir := ""
 	GLOBAL_GROUP_VARS_DIR := "00.global/group_vars/all"
@@ -16,9 +16,9 @@ func TestGetGetAnsibleSshCreds(t *testing.T) {
 	}
 	ansibleGlobalDir := path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)
 
-	srvsCreds, err := getGetAnsibleSshCreds(ansibleGlobalDir)
+	srvsCreds, err := getGetAnsibleSshServerYamlDetails(ansibleGlobalDir)
 	if err != nil || len(srvsCreds) < 1 {
-		t.Fatalf(`TestGetGetAnsibleSshCreds Failed, error=%v`, err)
+		t.Fatalf(`TestGetGetAnsibleSshServerYamlDetails Failed, error=%v`, err)
 	}
 
 }

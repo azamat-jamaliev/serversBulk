@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"math"
 	"reflect"
 	"strings"
 
@@ -31,34 +30,42 @@ func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 	d := 0
 	processUpDown := true
 	processEnter := true
+	processLeftRigh := true
 	// *TextView
 	curAppFocus := pCtrl.app.GetFocus()
 	curFocusName := strings.Trim(reflect.ValueOf(curAppFocus).Type().String(), " ")
 	if curFocusName == "*tview.List" {
+		processLeftRigh = true
 		processUpDown = false
 	} else if curFocusName == "*tview.TextView" {
 		processUpDown = false
 		processEnter = false
+	} else if curFocusName == "*tview.InputField" {
+		processLeftRigh = false
 	}
 	// fmt.Println("reflect.ValueOf(curAppFocus).Type().String() = [", reflect.ValueOf(curAppFocus).Type().String(), "]")
-	if event.Key() == tcell.KeyEsc || event.Key() == tcell.KeyRight ||
-		(event.Key() == tcell.KeyUp && processUpDown) {
+	if event.Key() == tcell.KeyEsc ||
+		(event.Key() == tcell.KeyLeft && processLeftRigh) ||
+		(event.Key() == tcell.KeyUp && processUpDown) ||
+		(event.Key() == tcell.KeyTab && event.Modifiers()&tcell.ModShift != 0) {
 		d = -1
-	} else if (event.Key() == tcell.KeyEnter && processEnter) || event.Key() == tcell.KeyLeft ||
-		(event.Key() == tcell.KeyDown && processUpDown) || event.Key() == tcell.KeyTab {
+	} else if (event.Key() == tcell.KeyEnter && processEnter) ||
+		(event.Key() == tcell.KeyRight && processLeftRigh) ||
+		(event.Key() == tcell.KeyDown && processUpDown) ||
+		event.Key() == tcell.KeyTab {
 		d = 1
 	}
 	if d != 0 {
 		for i, item := range pCtrl.focusOrder {
 			if item == curAppFocus {
 				// Go next page/action only by Enter button
-				if i+d >= len(pCtrl.focusOrder) && event.Key() == tcell.KeyEnter {
-					if pCtrl.lastItemExitHandler != nil {
-						pCtrl.lastItemExitHandler()
-					}
+				newFocusNum := i + d
+				if newFocusNum >= len(pCtrl.focusOrder) && event.Key() == tcell.KeyEnter && pCtrl.lastItemExitHandler != nil {
+					pCtrl.lastItemExitHandler()
+				} else if newFocusNum >= 0 && newFocusNum < len(pCtrl.focusOrder) {
+					// newFocusNum := int(math.Abs(float64(i+d))) % len(pCtrl.focusOrder)
+					pCtrl.app.SetFocus(pCtrl.focusOrder[newFocusNum])
 				}
-				result := int(math.Abs(float64(i+d))) % len(pCtrl.focusOrder)
-				pCtrl.app.SetFocus(pCtrl.focusOrder[result])
 				return
 			}
 		}

@@ -46,33 +46,26 @@ func (c *SshAdvanced) NewSftpClient() *sftp.Client {
 	return c.clientSftp
 }
 
-func getSshSigner(identityFilePath string) ssh.Signer {
-	// serverConf.BastionIdentityFile
-	// A public key may be used to authenticate against the remote
-	// server by using an unencrypted PEM-encoded private key file.
-	//
-	// If you have an encrypted private key, the crypto/x509 package
-	// can be used to decrypt it.
+func getSshSigner(identityFilePath string) (ssh.Signer, error) {
+	var signer ssh.Signer
 	key, err := ioutil.ReadFile(identityFilePath)
-	if err != nil {
-		panic(err)
+	if err == nil {
+		signer, err = ssh.ParsePrivateKey(key)
 	}
-	// Create the Signer for this private key.
-	signer, err := ssh.ParsePrivateKey(key)
-	if err != nil {
-		panic(err)
-	}
-
-	return signer
+	return signer, err
 }
 
-func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string) *SshAdvanced {
+func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string) (*SshAdvanced, error) {
+	var signer ssh.Signer
+	var err error
+
 	sshAdvanced := SshAdvanced{}
 
 	var srvAuthMethod []ssh.AuthMethod
 	if serverConf.IdentityFile != "" {
+		signer, err = getSshSigner(serverConf.IdentityFile)
 		srvAuthMethod = []ssh.AuthMethod{
-			ssh.PublicKeys(getSshSigner(serverConf.IdentityFile)),
+			ssh.PublicKeys(signer),
 		}
 	} else {
 		srvAuthMethod = []ssh.AuthMethod{
@@ -86,57 +79,57 @@ func OpenSshAdvanced(serverConf *configProvider.ConfigServerType, server string)
 		Timeout: time.Minute * 5,
 	}
 	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	if err == nil {
+		if serverConf.BastionServer != "" {
 
-	if serverConf.BastionServer != "" {
+			var hostKey ssh.PublicKey
+			var authMethod []ssh.AuthMethod
 
-		var hostKey ssh.PublicKey
-		var authMethod []ssh.AuthMethod
+			if serverConf.BastionIdentityFile != "" {
+				signer, err = getSshSigner(serverConf.BastionIdentityFile)
+				authMethod = []ssh.AuthMethod{
+					ssh.PublicKeys(signer),
+				}
+			} else {
+				authMethod = []ssh.AuthMethod{
+					ssh.Password(serverConf.BastionPassword),
+				}
+			}
 
-		if serverConf.BastionIdentityFile != "" {
-			authMethod = []ssh.AuthMethod{
-				ssh.PublicKeys(getSshSigner(serverConf.BastionIdentityFile)),
+			if err == nil {
+				sshConfigBastion := &ssh.ClientConfig{
+					User:            serverConf.BastionLogin,
+					Auth:            authMethod,
+					HostKeyCallback: ssh.FixedHostKey(hostKey),
+					Timeout:         time.Minute * 5,
+				}
+				sshConfigBastion.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+				// connect to the bastion host
+				bastionConn, e := ssh.Dial("tcp", fmt.Sprintf("%s:22", serverConf.BastionServer), sshConfigBastion)
+				if e != nil {
+					return nil, fmt.Errorf("CANNOT CONNECT TO BASTION SERVER: %s\nERROR:%v", serverConf.BastionServer, e)
+				}
+				sshAdvanced.bastionClient = bastionConn
+
+				// Dial a connection to the service host, from the bastion
+				connBtoS, e := bastionConn.Dial("tcp", fmt.Sprintf("%s:22", server))
+				if e != nil {
+					return nil, fmt.Errorf("CANNOT CONNECT TO SERVER: %s VIA BASTION SERVER:%s \nERROR:%v", server, serverConf.BastionServer, e)
+				}
+				sshAdvanced.bastionSrvConn = &connBtoS
+
+				connCtoC, chans, reqs, e := ssh.NewClientConn(connBtoS, server, sshConfig)
+				if e != nil {
+					return nil, fmt.Errorf("CANNOT CREATE CONNECTION TO SERVER: %s BASTION SERVER:%s \nERROR:%v", server, serverConf.BastionServer, e)
+				}
+
+				sshAdvanced.client = ssh.NewClient(connCtoC, chans, reqs)
+				// sClient is an ssh client connected to the service host, through the bastion host.
 			}
 		} else {
-			authMethod = []ssh.AuthMethod{
-				ssh.Password(serverConf.BastionPassword),
-			}
-		}
-
-		sshConfigBastion := &ssh.ClientConfig{
-			User:            serverConf.BastionLogin,
-			Auth:            authMethod,
-			HostKeyCallback: ssh.FixedHostKey(hostKey),
-			Timeout:         time.Minute * 5,
-		}
-		sshConfigBastion.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-		// connect to the bastion host
-		bastionConn, err := ssh.Dial("tcp", fmt.Sprintf("%s:22", serverConf.BastionServer), sshConfigBastion)
-		if err != nil {
-			panic(fmt.Sprintf("Cannot connect to Bastion server: %s\nERROR:%v", serverConf.BastionServer, err))
-		}
-		sshAdvanced.bastionClient = bastionConn
-
-		// Dial a connection to the service host, from the bastion
-		connBtoS, err := bastionConn.Dial("tcp", fmt.Sprintf("%s:22", server))
-		if err != nil {
-			panic(err)
-		}
-		sshAdvanced.bastionSrvConn = &connBtoS
-
-		connCtoC, chans, reqs, err := ssh.NewClientConn(connBtoS, server, sshConfig)
-		if err != nil {
-			panic(err)
-		}
-
-		sshAdvanced.client = ssh.NewClient(connCtoC, chans, reqs)
-		// sClient is an ssh client connected to the service host, through the bastion host.
-	} else {
-		var e error
-		sshAdvanced.client, e = ssh.Dial("tcp", fmt.Sprintf("%s:22", server), sshConfig)
-		if e != nil {
-			panic(e)
+			sshAdvanced.client, err = ssh.Dial("tcp", fmt.Sprintf("%s:22", server), sshConfig)
 		}
 	}
 
-	return &sshAdvanced
+	return &sshAdvanced, err
 }

@@ -21,19 +21,21 @@ func exists(path string) bool {
 	return false
 }
 
-type SshCreds struct {
-	Login, Password string
+type SshServerYamlDetails struct {
+	Login      string
+	Password   string
+	LogFolders []string
 }
 
 func getValueFromYamlFile(attrName, yamlFileContent string) string {
 	val := getMatchingValueFromYamlFile(fmt.Sprintf(`(?i)%s:\s*['"]([^"']+)`, attrName), yamlFileContent)
 	if len(val) < 1 {
-		val = getMatchingValueFromYamlFile(fmt.Sprintf(`(?i)%s:\s*([^\s\n]+)`, attrName), yamlFileContent)
+		val = getMatchingValueFromYamlFile(fmt.Sprintf(`(?i)%s:\s*([^\s\n'"]+)`, attrName), yamlFileContent)
 	}
 	return val
 }
 func getMatchingValueFromYamlFile(searchMatching, yamlFileContent string) string {
-	fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
+	// fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
 	reLogin := regexp.MustCompile(searchMatching)
 	matchesLogin := reLogin.FindStringSubmatch(yamlFileContent)
 	if len(matchesLogin) > 1 {
@@ -43,10 +45,10 @@ func getMatchingValueFromYamlFile(searchMatching, yamlFileContent string) string
 }
 func getServerTypeNameFromFile(filename string) string {
 	ext := path.Ext(filename)
-	return strings.ToLower(filename[0 : len(filename)-len(ext)])
+	return strings.ToLower(filename[:len(filename)-len(ext)])
 }
-func getGetAnsibleSshCreds(ansibleGlobalDir string) (map[string]SshCreds, error) {
-	result := map[string]SshCreds{}
+func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshServerYamlDetails, error) {
+	result := map[string]SshServerYamlDetails{}
 
 	globalDirFiles, err := os.ReadDir(ansibleGlobalDir)
 	if err != nil {
@@ -63,10 +65,18 @@ func getGetAnsibleSshCreds(ansibleGlobalDir string) (map[string]SshCreds, error)
 			bytes, _ := ioutil.ReadAll(yamlFile)
 			yamlFileContent := string(bytes)
 			login := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
-			pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
+			pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_pass", serverName), yamlFileContent)
 
-			if len(login) > 1 && len(pass) > 1 {
-				result[serverName] = SshCreds{Login: login, Password: pass}
+			srvHome := getValueFromYamlFile(fmt.Sprintf("%s_home", serverName), yamlFileContent)
+			logs := []string{}
+			if srvHome != "" {
+				logs = append(logs, fmt.Sprintf("%s/%s", srvHome, "logs"))
+				logs = append(logs, fmt.Sprintf("%s/%s", srvHome, "installer_logs"))
+			} else {
+			}
+
+			if login != "" && pass != "" {
+				result[serverName] = SshServerYamlDetails{Login: login, Password: pass, LogFolders: logs}
 			}
 		}
 	}
@@ -75,7 +85,7 @@ func getGetAnsibleSshCreds(ansibleGlobalDir string) (map[string]SshCreds, error)
 
 func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) {
 	config := GetDefaultConfig()
-	creds, err := getGetAnsibleSshCreds(path.Join(ansibleDir, "00.global/group_vars/all"))
+	creds, err := getGetAnsibleSshServerYamlDetails(path.Join(ansibleDir, "00.global/group_vars/all"))
 	if err != nil {
 		return config, err
 	}
@@ -86,11 +96,11 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 	}
 	for _, dir := range dirs {
 		if dir.IsDir() {
-			prefix := dir.Name()[0:len(envPrefix)]
+			prefix := dir.Name()[:len(envPrefix)]
 			if prefix == envPrefix && len(dir.Name()) > len(prefix) {
 				fmt.Println("Reading folder:", dir.Name())
 				env := ConfigEnvironmentType{
-					Name:    dir.Name()[len(envPrefix) : len(dir.Name())-len(envPrefix)],
+					Name:    dir.Name()[len(envPrefix):],
 					Servers: []ConfigServerType{},
 				}
 
@@ -111,10 +121,12 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 							srvIp := getValueFromYamlFile("ansible_host", string(bytes))
 							if len(srvIp) > 0 {
 								serv := ConfigServerType{
-									Name:        serverName,
-									IpAddresses: []string{srvIp},
-									Login:       cred.Login,
-									Passowrd:    cred.Password,
+									Name:           serverName,
+									IpAddresses:    []string{srvIp},
+									Login:          cred.Login,
+									Passowrd:       cred.Password,
+									LogFolders:     cred.LogFolders,
+									LogFilePattern: "*.log*",
 								}
 								env.Servers = append(env.Servers, serv)
 							}

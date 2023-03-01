@@ -7,7 +7,7 @@ import (
 	"sebulk/modules/tasks"
 )
 
-func executeWithParams(newLogHandler func(server, log string),
+func mainExecWithParams(newLogHandler func(server, log string),
 	newStatusHandler func(server, status string)) bool {
 	var taskName tasks.TaskType
 	configFileName := flag.String("c", "./config/sebulk_config.json", "path to environment configuration file")
