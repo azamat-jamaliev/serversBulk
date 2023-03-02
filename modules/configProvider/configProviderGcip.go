@@ -47,6 +47,12 @@ func getServerTypeNameFromFile(filename string) string {
 	ext := path.Ext(filename)
 	return strings.ToLower(filename[:len(filename)-len(ext)])
 }
+func appendIfNotEmpty(slice []string, value string) []string {
+	if value != "" {
+		return append(slice, value)
+	}
+	return slice
+}
 func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshServerYamlDetails, error) {
 	result := map[string]SshServerYamlDetails{}
 
@@ -67,13 +73,9 @@ func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshS
 			login := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
 			pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_pass", serverName), yamlFileContent)
 
-			srvHome := getValueFromYamlFile(fmt.Sprintf("%s_home", serverName), yamlFileContent)
 			logs := []string{}
-			if srvHome != "" {
-				logs = append(logs, fmt.Sprintf("%s/%s", srvHome, "logs"))
-				logs = append(logs, fmt.Sprintf("%s/%s", srvHome, "installer_logs"))
-			} else {
-			}
+			logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_logs_folder", serverName), yamlFileContent))
+			logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_installer_logs_folder", serverName), yamlFileContent))
 
 			if login != "" && pass != "" {
 				result[serverName] = SshServerYamlDetails{Login: login, Password: pass, LogFolders: logs}
