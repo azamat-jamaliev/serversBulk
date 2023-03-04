@@ -2,7 +2,7 @@ package configProvider
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"regexp"
@@ -35,12 +35,14 @@ func getValueFromYamlFile(attrName, yamlFileContent string) string {
 	return val
 }
 func getMatchingValueFromYamlFile(searchMatching, yamlFileContent string) string {
-	// fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
+	fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
 	reLogin := regexp.MustCompile(searchMatching)
 	matchesLogin := reLogin.FindStringSubmatch(yamlFileContent)
 	if len(matchesLogin) > 1 {
+		fmt.Printf("MATCH matchesLogin=%v\n", matchesLogin[1])
 		return matchesLogin[1]
 	}
+
 	return ""
 }
 func getServerTypeNameFromFile(filename string) string {
@@ -57,32 +59,38 @@ func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshS
 	result := map[string]SshServerYamlDetails{}
 
 	globalDirFiles, err := os.ReadDir(ansibleGlobalDir)
-	if err != nil {
-		return nil, err
-	}
-	for _, f := range globalDirFiles {
-		if !f.IsDir() {
-			serverName := getServerTypeNameFromFile(f.Name())
+	if err == nil {
+		countLogs := 0
+		for _, f := range globalDirFiles {
+			if !f.IsDir() {
+				serverName := getServerTypeNameFromFile(f.Name())
 
-			yamlFile, err := os.Open(path.Join(ansibleGlobalDir, f.Name()))
-			if err != nil {
-				return nil, err
-			}
-			bytes, _ := ioutil.ReadAll(yamlFile)
-			yamlFileContent := string(bytes)
-			login := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
-			pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_pass", serverName), yamlFileContent)
+				yamlFile, err := os.Open(path.Join(ansibleGlobalDir, f.Name()))
+				if err != nil {
+					return nil, err
+				}
+				bytes, _ := io.ReadAll(yamlFile)
+				yamlFileContent := string(bytes)
+				login := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_user", serverName), yamlFileContent)
+				pass := getValueFromYamlFile(fmt.Sprintf("%s_ansible_ssh_pass", serverName), yamlFileContent)
 
-			logs := []string{}
-			logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_logs_folder", serverName), yamlFileContent))
-			logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_installer_logs_folder", serverName), yamlFileContent))
+				logs := []string{}
+				logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_logs_folder", serverName), yamlFileContent))
+				logs = appendIfNotEmpty(logs, getValueFromYamlFile(fmt.Sprintf("%s_installer_logs_folder", serverName), yamlFileContent))
 
-			if login != "" && pass != "" {
-				result[serverName] = SshServerYamlDetails{Login: login, Password: pass, LogFolders: logs}
+				if login != "" && pass != "" {
+					result[serverName] = SshServerYamlDetails{Login: login, Password: pass, LogFolders: logs}
+				}
+				if len(logs) > 0 {
+					countLogs++
+				}
 			}
 		}
+		if countLogs == 0 {
+			err = fmt.Errorf("ERROR: no log folders like: [server_logs_folder] or [server_installer_logs_folder] were found in yaml files in: [%s]", globalDirFiles)
+		}
 	}
-	return result, nil
+	return result, err
 }
 
 func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) {
@@ -116,10 +124,11 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 						serverName := getServerTypeNameFromFile(f.Name())
 						if cred, ok := creds[serverName]; ok {
 							yamlFile, err := os.Open(path.Join(envHostDir, f.Name()))
+
 							if err != nil {
 								return config, err
 							}
-							bytes, _ := ioutil.ReadAll(yamlFile)
+							bytes, _ := io.ReadAll(yamlFile)
 							srvIp := getValueFromYamlFile("ansible_host", string(bytes))
 							if len(srvIp) > 0 {
 								serv := ConfigServerType{

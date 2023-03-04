@@ -2,7 +2,7 @@ package configProvider
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
@@ -37,7 +37,7 @@ func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
 	}
 
 	var config ConfigEnvironmentType
-	jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
+	jsonFileBytes, _ := io.ReadAll(jsonFile)
 	if err := json.Unmarshal(jsonFileBytes, &config); err != nil {
 		panic(err)
 	}
@@ -47,7 +47,7 @@ func GetFileConfig(jsonFileName string) (ConfigFileType, error) {
 	var config ConfigFileType
 	jsonFile, err := os.Open(jsonFileName)
 	if err == nil {
-		jsonFileBytes, _ := ioutil.ReadAll(jsonFile)
+		jsonFileBytes, _ := io.ReadAll(jsonFile)
 		err = json.Unmarshal(jsonFileBytes, &config)
 	}
 	return config, err
@@ -57,7 +57,7 @@ func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile(*jsonFileName, bytes, 0644); err != nil {
+	if err := os.WriteFile(*jsonFileName, bytes, 0644); err != nil {
 		panic(err)
 	}
 }

@@ -2,8 +2,8 @@ package sshHelper
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"sebulk/modules/configProvider"
 	"time"
 
@@ -48,7 +48,7 @@ func (c *SshAdvanced) NewSftpClient() *sftp.Client {
 
 func getSshSigner(identityFilePath string) (ssh.Signer, error) {
 	var signer ssh.Signer
-	key, err := ioutil.ReadFile(identityFilePath)
+	key, err := os.ReadFile(identityFilePath)
 	if err == nil {
 		signer, err = ssh.ParsePrivateKey(key)
 	}

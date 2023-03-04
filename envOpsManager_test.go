@@ -45,3 +45,27 @@ func TestEnvOpsManager_Download(t *testing.T) {
 		t.Fatalf(`Dowloading Failed`)
 	}
 }
+
+func TestEnvOpsManager_Upload(t *testing.T) {
+	// taskName = tasks.TypeGrepInLogs
+	// taskName = tasks.TypeUploadFile
+
+	str := "./test/local_test.json"
+	config := configProvider.GetEnvironemntConfig(&str)
+	statResult := ""
+	StartTaskForEnv(&config,
+		tasks.TypeUploadFile,
+		"",
+		"-0.2",
+		"./test/local_test.json", "/var/tmp/",
+		func(server, log string) {
+			fmt.Printf("Upload file to server: %s, Log:%s", server, log)
+		},
+		func(server, status string) {
+			fmt.Printf("Upload file to server: %s, status: %s\n", server, status)
+			statResult = status
+		})
+	if statResult != string(tasks.Finished) {
+		t.Fatalf(`Uploading Failed`)
+	}
+}

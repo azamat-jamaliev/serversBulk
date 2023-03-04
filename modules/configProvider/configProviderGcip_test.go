@@ -37,4 +37,15 @@ func TestGetAnsibleFileConfig(t *testing.T) {
 	if len(config.Environments) < 2 {
 		t.Fatalf(`TestGetAnsibleFileConfig Failed, config.Environments<2`)
 	}
+	countOfLogs := 0
+	for _, env := range config.Environments {
+		for _, srv := range env.Servers {
+			if len(srv.LogFolders) > 0 {
+				countOfLogs++
+			}
+		}
+	}
+	if countOfLogs < 4 {
+		t.Fatalf(`TestGetAnsibleFileConfig Failed, logs are not available`)
+	}
 }

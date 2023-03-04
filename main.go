@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -55,11 +54,12 @@ func main() {
 	// configPath = "./build"
 	configPath = path.Join(configPath, "sebulk_config.json")
 	fmt.Println(configPath)
-	config, err := configProvider.GetFileConfig(configPath)
+
+	config, err := configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
 	if err != nil {
-		config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+		config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
 		if err != nil {
-			config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+			config, err = configProvider.GetFileConfig(configPath)
 			if err != nil {
 				config = configProvider.GetDefaultConfig()
 			}
@@ -80,7 +80,6 @@ func main() {
 		mainPageController.SetDefaultFocus()
 		configProvider.SaveFileConfig(&configPath, config)
 		mainPageController.ReloadList()
-		// app.Draw()
 	}
 	configEditHandler := func(config *configProvider.ConfigEnvironmentType) {
 		pagesView.AddAndSwitchToPage(pages.PageNameEditEnv, pages.EditEnvPage(app, config, envExitHandler, envSaveHandler), true)
@@ -99,7 +98,7 @@ func main() {
 		for server, log := range ServerLog {
 			if len(server) > 0 {
 				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServerIP(server), "txt"))
-				if err := ioutil.WriteFile(fileName, []byte(log), 0644); err != nil {
+				if err := os.WriteFile(fileName, []byte(log), 0644); err != nil {
 					panic(err)
 				}
 			}
