@@ -17,7 +17,11 @@ func executeOnServer(serverConf *configProvider.ConfigServerType, server, cmd st
 		return "", err
 	}
 	defer sshAdv.Close()
-	statusHandler(server, fmt.Sprintf("executing command:[%s]", cmd))
+	str, e := executeWithConnection(sshAdv, server, cmd)
+	return str, e
+}
+func executeWithConnection(sshAdv *sshHelper.SshAdvanced, server, cmd string) (string, error) {
+	statusHandler(server, fmt.Sprintf("EXECUTING.. command:[%s]", cmd))
 	logHandler(server, fmt.Sprintf("executing command:[%s] on ssh server:[%s]", cmd, server))
 	buff, e := sshAdv.NewSession().Output(cmd)
 	if e != nil {

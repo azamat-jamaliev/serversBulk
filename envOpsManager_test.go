@@ -69,3 +69,26 @@ func TestEnvOpsManager_Upload(t *testing.T) {
 		t.Fatalf(`Uploading Failed`)
 	}
 }
+func TestEnvOpsManager_Grep(t *testing.T) {
+	// taskName = tasks.TypeGrepInLogs
+	// taskName = tasks.TypeUploadFile
+
+	str := "./test/local_test.json"
+	config := configProvider.GetEnvironemntConfig(&str)
+	statResult := ""
+	StartTaskForEnv(&config,
+		tasks.TypeGrepInLogs,
+		"",
+		"-0.2",
+		"var", "",
+		func(server, log string) {
+			fmt.Printf("GREP on server: %s, Log:%s", server, log)
+		},
+		func(server, status string) {
+			fmt.Printf("GREP on server: %s, status: %s\n", server, status)
+			statResult = status
+		})
+	if statResult != string(tasks.Finished) {
+		t.Fatalf(`GREP Failed`)
+	}
+}
