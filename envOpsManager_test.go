@@ -46,6 +46,31 @@ func TestEnvOpsManager_Download(t *testing.T) {
 	}
 }
 
+func TestEnvOpsManager_NothingToDownload(t *testing.T) {
+	// taskName = tasks.TypeGrepInLogs
+	// taskName = tasks.TypeUploadFile
+
+	str := "./test/local_test.json"
+	config := configProvider.GetEnvironemntConfig(&str)
+	statResult := ""
+	config.Servers[0].LogFilePattern = "long_name_which-cannotbefound.txt"
+	StartTaskForEnv(&config,
+		tasks.TypeArchiveLogs,
+		"",
+		"-0.2",
+		t.TempDir(), "",
+		func(server, log string) {
+			fmt.Println(log)
+		},
+		func(server, status string) {
+			fmt.Printf("NothingToDownload Server: %s, status: %s\n", server, status)
+			statResult = status
+		})
+	if statResult != string(tasks.Finished) {
+		t.Fatalf(`NothingToDownload failed`)
+	}
+}
+
 func TestEnvOpsManager_Upload(t *testing.T) {
 	// taskName = tasks.TypeGrepInLogs
 	// taskName = tasks.TypeUploadFile
