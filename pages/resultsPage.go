@@ -43,6 +43,8 @@ func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string)
 	})
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if exitHandlerFunc != nil && event.Key() == tcell.KeyEsc {
+			serverStatusList.Clear()
+			serverLogView.Clear()
 			exitHandlerFunc()
 		} else if saveLogsHandlerFunc != nil && event.Key() == tcell.KeyCtrlS {
 			saveLogsHandlerFunc()
