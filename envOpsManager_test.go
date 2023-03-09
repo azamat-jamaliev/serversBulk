@@ -10,9 +10,6 @@ import (
 // TestHelloName calls greetings.Hello with a name, checking
 // for a valid return value.
 func TestEnvOpsManager_Download(t *testing.T) {
-	// taskName = tasks.TypeGrepInLogs
-	// taskName = tasks.TypeUploadFile
-
 	str := "./test/local_test.json"
 	config := configProvider.GetEnvironemntConfig(&str)
 	statResult := ""
@@ -47,9 +44,6 @@ func TestEnvOpsManager_Download(t *testing.T) {
 }
 
 func TestEnvOpsManager_NothingToDownload(t *testing.T) {
-	// taskName = tasks.TypeGrepInLogs
-	// taskName = tasks.TypeUploadFile
-
 	str := "./test/local_test.json"
 	config := configProvider.GetEnvironemntConfig(&str)
 	statResult := ""
@@ -72,9 +66,6 @@ func TestEnvOpsManager_NothingToDownload(t *testing.T) {
 }
 
 func TestEnvOpsManager_Upload(t *testing.T) {
-	// taskName = tasks.TypeGrepInLogs
-	// taskName = tasks.TypeUploadFile
-
 	str := "./test/local_test.json"
 	config := configProvider.GetEnvironemntConfig(&str)
 	statResult := ""
@@ -95,9 +86,6 @@ func TestEnvOpsManager_Upload(t *testing.T) {
 	}
 }
 func TestEnvOpsManager_Grep(t *testing.T) {
-	// taskName = tasks.TypeGrepInLogs
-	// taskName = tasks.TypeUploadFile
-
 	str := "./test/local_test.json"
 	config := configProvider.GetEnvironemntConfig(&str)
 	statResult := ""
@@ -115,5 +103,26 @@ func TestEnvOpsManager_Grep(t *testing.T) {
 		})
 	if statResult != string(tasks.Finished) {
 		t.Fatalf(`GREP Failed`)
+	}
+}
+
+func TestEnvOpsManager_Awk(t *testing.T) {
+	str := "./test/local_test.json"
+	config := configProvider.GetEnvironemntConfig(&str)
+	statResult := ""
+	StartTaskForEnv(&config,
+		tasks.TypeAwkInLogs,
+		"",
+		"-0.2",
+		"var", "",
+		func(server, log string) {
+			fmt.Printf("AWK on server: %s, Log:%s", server, log)
+		},
+		func(server, status string) {
+			fmt.Printf("AWK on server: %s, status: %s\n", server, status)
+			statResult = status
+		})
+	if statResult != string(tasks.Finished) {
+		t.Fatalf(`AWK Failed`)
 	}
 }

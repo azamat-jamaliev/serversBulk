@@ -10,6 +10,7 @@ const (
 	TypeArchiveGzip     TaskType = "TypeArchiveGzip"
 	TypeDownloadArchive TaskType = "DownloadLogs"
 	TypeGrepInLogs      TaskType = "GrepInLogs"
+	TypeAwkInLogs       TaskType = "AwkInLogs"
 	TypeExecuteCommand  TaskType = "ExecuteCommand"
 )
 

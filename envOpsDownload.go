@@ -24,11 +24,9 @@ func archiveLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 			defer sshAdv.Close()
 
 			tarNamefile := fmt.Sprintf("~/%s.%s", fileNameFromServerIP(task.Server), "tar")
+			tarCmd := fmt.Sprintf("tar rvf %s {}", tarNamefile)
+			cmd := getFindExecForTask(task, tarCmd)
 
-			cmd := fmt.Sprintf("cd %s", task.ConfigServer.LogFolders[0])
-			for _, folder := range task.ConfigServer.LogFolders {
-				cmd = fmt.Sprintf("%s; find %s ! -readable -prune -o -type f -iname \"%s\" -mtime %s -exec tar rvf %s {} \\;", cmd, folder, task.ConfigServer.LogFilePattern, task.ModifTime, tarNamefile)
-			}
 			str, err = executeWithConnection(sshAdv, task.Server, cmd)
 			logHandler(task.Server, fmt.Sprintf("archiveLogs - cmd: [%s] - result: [%s] ", cmd, str))
 

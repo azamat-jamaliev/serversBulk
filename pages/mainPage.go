@@ -89,6 +89,7 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		AddItem("Download logs", "", 'd', nil).
 		AddItem("Execute command", "", 'e', nil).
 		AddItem("Search in logs", "", 's', nil).
+		AddItem("Quick check errors", "", 'q', nil).
 		AddItem("Upload file", "", 'u', nil)
 
 	main := tview.NewFlex()
@@ -141,6 +142,15 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		func() {
 			clearFields()
 			main.SetDirection(tview.FlexRow).
+				AddItem(tview.NewFlex().SetDirection(tview.FlexColumn).
+					AddItem(ctrl.addFocus(mtimeField), 19, 1, true).
+					AddItem(mtimeInfoLabel, 0, 1, true), 1, 1, true)
+			addServersList()
+			taskName = tasks.TypeAwkInLogs
+		},
+		func() {
+			clearFields()
+			main.SetDirection(tview.FlexRow).
 				AddItem(ctrl.addFocus(commandField), 1, 1, true).
 				AddItem(ctrl.addFocus(uploadToField), 1, 1, true)
 			addServersList()
@@ -152,8 +162,6 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		listHandlers[index]()
 	})
 	listHandlers[0]()
-
-	// mtimeInfoLabel
 
 	grid.AddItem(commandList, 1, 0, 1, 1, 0, 20, true).
 		AddItem(main, 1, 1, 1, 1, 0, 60, true)

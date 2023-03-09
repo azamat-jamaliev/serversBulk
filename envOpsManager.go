@@ -73,6 +73,8 @@ func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 			switch task.Type {
 			case tasks.TypeGrepInLogs:
 				go grepInLogs(task, tasksChannel)
+			case tasks.TypeAwkInLogs:
+				go awkInLogs(task, tasksChannel)
 			case tasks.TypeExecuteCommand:
 				go executeCommand(task, tasksChannel)
 			case tasks.TypeArchiveLogs:
@@ -138,4 +140,16 @@ func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
 		}
 		time.Sleep(3 * time.Second)
 	}
+}
+
+func getFindExecCommad(logFolders []string, logFilePattern, mTime, commandToExecute string) string {
+	// strGrep := fmt.Sprintf("grep --color=auto -H -A25 -B3 -i \"%s\" {}  \\;", task.CommandCargo)
+	cmd := "cd ~"
+	for _, folder := range logFolders {
+		cmd = fmt.Sprintf("%s; find %s ! -readable -prune -o -type f -iname \"%s\" -mtime %s -exec %s \\;", cmd, folder, logFilePattern, mTime, commandToExecute)
+	}
+	return cmd
+}
+func getFindExecForTask(task tasks.ServerTask, commandToExecute string) string {
+	return getFindExecCommad(task.ConfigServer.LogFolders, task.ConfigServer.LogFilePattern, task.ModifTime, commandToExecute)
 }
