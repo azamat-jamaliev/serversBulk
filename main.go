@@ -53,15 +53,18 @@ func main() {
 	configPath := filepath.Dir(ex)
 	// configPath = "./build"
 	configPath = path.Join(configPath, "sebulk_config.json")
-	fmt.Println(configPath)
 
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
 		config = configProvider.GetDefaultConfig()
 	}
-	envs, err := configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+
+	envs, err := configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "./test/ansible-inventory", "CLASSIC"), "30.")
 	if err != nil {
-		envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+		envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+		if err != nil {
+			envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+		}
 	}
 	if err == nil {
 		config.Environments = append(config.Environments, envs...)

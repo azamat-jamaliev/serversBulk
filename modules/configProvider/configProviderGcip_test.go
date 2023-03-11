@@ -30,15 +30,15 @@ func TestGetAnsibleFileConfig(t *testing.T) {
 	if ansibleDir = "../../test/ansible-inventory/CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
 		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
 	}
-	config, err := GetAnsibleFileConfig(ansibleDir, "30.")
+	envs, err := GetAnsibleEnvironmentsConfig(ansibleDir, "30.")
 	if err != nil {
 		t.Fatalf(`TestGetAnsibleFileConfig Failed, error=%v`, err)
 	}
-	if len(config.Environments) < 2 {
+	if len(envs) < 2 {
 		t.Fatalf(`TestGetAnsibleFileConfig Failed, config.Environments<2`)
 	}
 	countOfLogs := 0
-	for _, env := range config.Environments {
+	for _, env := range envs {
 		for _, srv := range env.Servers {
 			if len(srv.LogFolders) > 0 {
 				countOfLogs++

@@ -35,11 +35,9 @@ func getValueFromYamlFile(attrName, yamlFileContent string) string {
 	return val
 }
 func getMatchingValueFromYamlFile(searchMatching, yamlFileContent string) string {
-	fmt.Println("getMatchingValueFromYamlFile yaml serach matching: ", searchMatching)
 	reLogin := regexp.MustCompile(searchMatching)
 	matchesLogin := reLogin.FindStringSubmatch(yamlFileContent)
 	if len(matchesLogin) > 1 {
-		fmt.Printf("MATCH matchesLogin=%v\n", matchesLogin[1])
 		return matchesLogin[1]
 	}
 
@@ -108,10 +106,10 @@ func GetAnsibleEnvironmentsConfig(ansibleDir, envPrefix string) ([]ConfigEnviron
 		if dir.IsDir() {
 			prefix := dir.Name()[:len(envPrefix)]
 			if prefix == envPrefix && len(dir.Name()) > len(prefix) {
-				fmt.Println("Reading folder:", dir.Name())
 				env := ConfigEnvironmentType{
-					Name:    dir.Name()[len(envPrefix):],
-					Servers: []ConfigServerType{},
+					Name:      dir.Name()[len(envPrefix):],
+					Servers:   []ConfigServerType{},
+					DoNotSave: true,
 				}
 
 				envHostDir := path.Join(ansibleDir, dir.Name(), "host_vars")

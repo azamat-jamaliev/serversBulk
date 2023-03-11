@@ -20,7 +20,7 @@ func mainExecWithParams(newLogHandler func(server, log string),
 	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
 
-	fmt.Printf("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
+	fmt.Printf("!! NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
 
 	cargo := ""
 	cargo2 := "/var/log/"

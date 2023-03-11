@@ -43,7 +43,6 @@ func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 	} else if curFocusName == "*tview.InputField" {
 		processLeftRigh = false
 	}
-	// fmt.Println("reflect.ValueOf(curAppFocus).Type().String() = [", reflect.ValueOf(curAppFocus).Type().String(), "]")
 	if event.Key() == tcell.KeyEsc ||
 		(event.Key() == tcell.KeyLeft && processLeftRigh) ||
 		(event.Key() == tcell.KeyUp && processUpDown) ||
