@@ -93,16 +93,16 @@ func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshS
 	return result, err
 }
 
-func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) {
-	config := GetDefaultConfig()
+func GetAnsibleEnvironmentsConfig(ansibleDir, envPrefix string) ([]ConfigEnvironmentType, error) {
+	envs := []ConfigEnvironmentType{}
 	creds, err := getGetAnsibleSshServerYamlDetails(path.Join(ansibleDir, "00.global/group_vars/all"))
 	if err != nil {
-		return config, err
+		return nil, err
 	}
 
 	dirs, err := os.ReadDir(ansibleDir)
 	if err != nil {
-		return config, err
+		return nil, err
 	}
 	for _, dir := range dirs {
 		if dir.IsDir() {
@@ -117,7 +117,7 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 				envHostDir := path.Join(ansibleDir, dir.Name(), "host_vars")
 				files, err := os.ReadDir(envHostDir)
 				if err != nil {
-					return config, err
+					return envs, err
 				}
 				for _, f := range files {
 					if !f.IsDir() {
@@ -126,7 +126,7 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 							yamlFile, err := os.Open(path.Join(envHostDir, f.Name()))
 
 							if err != nil {
-								return config, err
+								return envs, err
 							}
 							bytes, _ := io.ReadAll(yamlFile)
 							srvIp := getValueFromYamlFile("ansible_host", string(bytes))
@@ -145,11 +145,11 @@ func GetAnsibleFileConfig(ansibleDir, envPrefix string) (ConfigFileType, error) 
 					}
 				}
 				if len(env.Servers) > 0 {
-					config.Environments = append(config.Environments, env)
+					envs = append(envs, env)
 				}
 			}
 		}
 	}
 
-	return config, err
+	return envs, err
 }

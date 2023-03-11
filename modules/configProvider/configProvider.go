@@ -20,8 +20,9 @@ type ConfigServerType struct {
 	IpAddresses         []string
 }
 type ConfigEnvironmentType struct {
-	Name    string //environment name
-	Servers []ConfigServerType
+	Name     string //environment name
+	FromFile bool
+	Servers  []ConfigServerType
 }
 type ConfigFileType struct {
 	DownloadFolder string
@@ -49,11 +50,24 @@ func GetFileConfig(jsonFileName string) (ConfigFileType, error) {
 	if err == nil {
 		jsonFileBytes, _ := io.ReadAll(jsonFile)
 		err = json.Unmarshal(jsonFileBytes, &config)
+		if err == nil {
+			for i := range config.Environments {
+				config.Environments[i].FromFile = true
+			}
+		}
 	}
+
 	return config, err
 }
 func SaveFileConfig(jsonFileName *string, conf ConfigFileType) {
-	bytes, err := json.Marshal(conf)
+	modifiedConf := conf
+	modifiedConf.Environments = []ConfigEnvironmentType{}
+	for _, env := range conf.Environments {
+		if env.FromFile {
+			modifiedConf.Environments = append(modifiedConf.Environments, env)
+		}
+	}
+	bytes, err := json.Marshal(modifiedConf)
 	if err != nil {
 		panic(err)
 	}

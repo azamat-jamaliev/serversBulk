@@ -55,15 +55,16 @@ func main() {
 	configPath = path.Join(configPath, "sebulk_config.json")
 	fmt.Println(configPath)
 
-	config, err := configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
-		config, err = configProvider.GetAnsibleFileConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
-		if err != nil {
-			config, err = configProvider.GetFileConfig(configPath)
-			if err != nil {
-				config = configProvider.GetDefaultConfig()
-			}
-		}
+		config = configProvider.GetDefaultConfig()
+	}
+	envs, err := configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+	if err != nil {
+		envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+	}
+	if err == nil {
+		config.Environments = append(config.Environments, envs...)
 	}
 
 	app := tview.NewApplication()
