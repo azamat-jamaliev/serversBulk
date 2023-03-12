@@ -8,6 +8,7 @@ import (
 	"sebulk/modules/configProvider"
 	"sebulk/modules/tasks"
 	"sebulk/pages"
+	"sync"
 
 	// _ "net/http/pprof"
 
@@ -15,18 +16,24 @@ import (
 )
 
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
+var muStatus sync.Mutex
+var muLog sync.Mutex
 
 func ServerTaskStatusHandler(server, status string) {
+	muStatus.Lock()
 	ServerStatus[server] = status
 	pages.DisplayServerTaskStatus(server, string(status))
+	muStatus.Unlock()
 }
 func ServerLogHandler(server, logRecord string) {
+	muLog.Lock()
 	if val, ok := ServerLog[server]; ok {
 		ServerLog[server] = fmt.Sprintf("%s\n%s", val, logRecord)
 	} else {
 		ServerLog[server] = logRecord
 	}
 	pages.DisplayServerLog(ServerLog[server])
+	muLog.Unlock()
 }
 func GetServerLog(server string) string {
 	if val, ok := ServerLog[server]; ok {
