@@ -2,11 +2,34 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"sebulk/modules/sshHelper"
 	"sebulk/modules/tasks"
 )
+
+var dateRegExp = []string{
+	"[0-9]{2}[-\\.][0-9]{1,2}[-\\.]2[0-9]{3} [0-9]{1,2}[\\:]{1,2}[0-9]{2}[\\:]{1,2}[0-9]{2}",
+	"2[0-9]{3}[-\\.][0-9]{1,2}[-\\.][0-9]{1,2} [0-9]{1,2}[\\:]{1,2}[0-9]{2}[\\:]{1,2}[0-9]{2}",
+	"[A-Za-z]{3} [0-9]{1,2}, 2[0-9]{3} [0-9]{1,2}:[0-9]{2}:[0-9]{2} [PAM]{2}",
+}
+
+const charsBeforeDate = "^.{0,20}"
+
+var datesTemplas = []string{
+	"02.01.2006 15\\:04\\:05",
+	"02.01.2006 15:04:05",
+	"2006-01-02 15:04:05",
+	"2006-01-02 15:04:05",
+	"2006.02.01 15\\:04\\:05",
+	"2006.02.01 15:04:05",
+	"Jan _2, 2006 3:04:05 PM",
+}
+var strRegExDates = strings.Join(dateRegExp, "|")
 
 // NOTE: output result is in the channel
 func awkInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
@@ -14,64 +37,69 @@ func awkInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 	statusHandler(task.Server, "CONNECTING...")
 	logHandler(task.Server, fmt.Sprintf("connecting to server: [%s] to awk", task.Server))
 	strOutput := ""
-	// var mHours int
-	// var curSrvTime, timeLogs time.Time
-	// t := time.Now()
 	sshAdv, err := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
+	var curSrvTime time.Time
 	if err == nil {
 		defer sshAdv.Close()
-		// if task.ModifTime != "" {
-		// 	var mDays float64
-		// 	mDays, err = strconv.ParseFloat(task.ModifTime, 64)
-		// 	if err == nil {
-		// 		// mHours = int(mDays * 24)
-		// 		useMtime = true
-		// 	}
-		// }
-		// get from Linux: date "+%Y-%m-%d %H:%M:%S" !!!
-		// if err == nil && useMtime {
-		// 	strOutput, err = executeWithConnection(sshAdv, task.Server, `date -u +"%Y-%m-%dT%H:%M:%S"`)
-		// 	if err == nil {
-		// 		curSrvTime, err = time.Parse(time.RFC3339, strOutput)
-		// 		if err == nil {
-		// 			timeLogs = curSrvTime.Add(time.Duration(mHours) * time.Hour)
-		// 		}
-		// 	}
-		// }
+		strOutput, err = executeWithConnection(sshAdv, task.Server, `date -u +"%Y-%m-%dT%H:%M:%S"`)
+		//
 		if err == nil {
-			// ^.{0,10}[0-9]{1,2}[-\.][0-9]{1,2}[-\.]2[0-9]{3} [0-9]{1,2}[\\:]{1,2}[0-9]{2}
-			dateRegExp := []string{
-				`^.{0,10}[0-9]{1,2}[-\.][0-9]{1,2}[-\.]2[0-9]{3} [0-9]{1,2}[\\:]{1,2}[0-9]{2}`,
-				`^.{0,10}2[0-9]{3}[-\.][0-9]{1,2}[-\.][0-9]{1,2} [0-9]{1,2}[\\:]{1,2}[0-9]{2}`,
-				`^.{0,10}[A-Za-z]{3} [0-9]{1,2}, 2[0-9]{3} [0-9]{1,2}:[0-9]{2}`,
-			}
+			strOutput = strings.TrimSpace(strOutput)
+			curSrvTime, err = time.Parse("2006-01-02T15:04:05", strOutput)
+			if err == nil {
+				mtime := 0.01
+				mtime, err = strconv.ParseFloat(task.ModifTime, 32)
+				if err == nil && mtime < 0 {
+					hours := math.Round((mtime * 24) + 0.5)
+					fromTime := curSrvTime.Add(time.Duration(hours) * time.Hour)
+					// ^.{0,10}[0-9]{1,2}[-\.][0-9]{1,2}[-\.]2[0-9]{3} [0-9]{1,2}[\\:]{1,2}[0-9]{2}
 
-			strRegExDates := strings.Join(dateRegExp, "|")
-			strAwk := fmt.Sprintf("awk  '/(%s)[^\\n]{0,60}(Error|ERROR)/{ print $0; f = 1 ;next } f; /(%s)/ { if (f == 1){ f = 0; print \"+++++++++++\"}}' {} ", strRegExDates, strRegExDates)
-			task.ExecuteCmd = getFindExecForTask(task, strAwk)
-			strOutput, err = executeWithConnection(sshAdv, task.Server, task.ExecuteCmd)
+					strAwk := fmt.Sprintf("awk  '/%s(%s)[^\\n]{0,60}(Error|ERROR)/{ print $0; f = 1 ;next } f; /(%s)/ { if (f == 1){ f = 0; print \"+++++++++++\"}}' {} ", charsBeforeDate, strRegExDates, strRegExDates)
+					task.ExecuteCmd = getFindExecForTask(task, strAwk)
+					strOutput, err = executeWithConnection(sshAdv, task.Server, task.ExecuteCmd)
+
+					if err == nil {
+						strOutput = filterLogLines(strOutput, fromTime)
+					}
+				}
+			}
 		}
 	}
 	output <- *taskForChannel(&task, strOutput, err, tasks.Finished, nil)
 }
+func filterLogLines(logTest string, timeFrom time.Time) string {
+	logDatRegex := fmt.Sprintf("%s(%s)", charsBeforeDate, strRegExDates)
+	re := regexp.MustCompile(logDatRegex)
+	logLines := strings.Split(logTest, "\n")
 
-// 14.08.2022 20\:22\:06.816 ^.{0,10}[0-9]{1,2}[-\.][0-9]{1,2}[-\.]2[0-9]{3}[\s\t]+[0-9]{1,2}[\\:]{1,2}[0-9]{2}
-// 15.08.2022 01:30:35.202
-// 12.08.2022 02:14:35
-// 2022-08-12	15:42:09 ^.{0,10}2[0-9]{3}[-\.][0-9]{1,2}[-\.][0-9]{1,2}[\s\t]+[0-9]{1,2}[\\:]{1,2}[0-9]{2}
-// 2022.13.08 20\:46\:36.824 - same as above
-// 2022.14.08 20:21:58.270 - same as above
-// 2022.13.08 20\:46\:36.824 - same as above
-// 2022.14.08 20:21:58.270	- same as above
-// Aug 4, 2022 6:11:05 - ^.{0,10}[A-Za-z]{3} [0-9]{1,2}, 2[0-9]{3} [0-9]{1,2}:[0-9]{2}
-
-//USE AWK instead of Grep:
-// awk  '/Aug 4, 2022 6\:11\:05.*(Error|ERROR)/ {print $0; f = 1;
-// if (match($0,/Aug 4, 2022/)) printf "MATCHED:[%s]", substr($0, RSTART, RLENGTH); next} f;/Aug 4, 2022/ {if (f == 1){f = 0; print "#######################"};}' ./admin.log
-
-// AWK SIMPLE: awk  '/Aug 4, 2022 6\:11\:05.*(Error|ERROR)/{ print $0; f = 1; next } f; /Aug 4, 2022/ { if (f == 1){ f = 0; print "#######################"}}' ./admin.log
-// Parse in GO ?
-
-// AWK with seraching date
-// # DATE:
-//
+	begin := false
+	chunk := ""
+	strOutput := ""
+	var err error
+	for _, line := range logLines {
+		matchRe := re.FindStringSubmatch(line)
+		if len(matchRe) > 1 {
+			if len(chunk) > 0 {
+				strOutput = fmt.Sprintf("%s\n%s", strOutput, chunk)
+			}
+			dateInLog := time.Now()
+			for _, tmpl := range datesTemplas {
+				dateInLog, err = time.Parse(tmpl, matchRe[1])
+				if err == nil { //converted succesfully
+					break
+				}
+			}
+			if err != nil {
+				panic(fmt.Sprintf("cannot convert value[%s] to date (from line:[%s])", matchRe[1], line))
+			}
+			begin = dateInLog.After(timeFrom)
+		}
+		if begin {
+			chunk = fmt.Sprintf("%s\n%s", chunk, line)
+		}
+	}
+	if len(chunk) > 0 {
+		strOutput = fmt.Sprintf("%s\n%s", strOutput, chunk)
+	}
+	return strOutput
+}
