@@ -125,3 +125,12 @@ docker build -t sebulk_test .
 docker run -d -p 22:22 sebulk_test
 ```
 https://dev.to/s1ntaxe770r/how-to-setup-ssh-within-a-docker-container-i5i
+
+### Debug
+```
+go build -gcflags=all="-N -l" -o ./test .
+```
+execute ./sebulk 
+update "processId" in .vscode/launch.json file 
+
+use ">" in Run and Debug

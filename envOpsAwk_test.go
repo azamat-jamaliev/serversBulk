@@ -45,7 +45,7 @@ func RunTestForDir(t *testing.T, logDir, strDateFrom string) {
 				file, err = os.Open(path.Join(logDir, f.Name()))
 				if err == nil {
 					bytes, _ := io.ReadAll(file)
-					filteredLines := filterLogLines(string(bytes), timeFrom)
+					filteredLines := filterLogLines("", string(bytes), timeFrom)
 					log.Println(filteredLines)
 					log.Println("/////////////////////////////////////////")
 				}
