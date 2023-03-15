@@ -123,10 +123,7 @@ func taskForChannel(task *tasks.ServerTask, log string, err error, newStatus tas
 func fileNameFromServerIP(serverIp string) string {
 	return strings.ReplaceAll(serverIp, ".", "_")
 }
-func printDownloadProgress(fileSizeInfo chan FileSizeInfo) {
-	var fSize *FileSizeInfo
-	f := <-fileSizeInfo
-	fSize = &f
+func printDownloadProgress(fSize FileSizeInfo) {
 	for {
 		fileStat, err := os.Stat(fSize.FileName)
 		if err != nil {

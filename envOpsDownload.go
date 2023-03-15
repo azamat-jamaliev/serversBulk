@@ -84,7 +84,11 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 		output <- *taskForChannel(&task, "downloadFile - Unable to open remote file", err, tasks.Failed, nil)
 		return err
 	}
-	fileInfo, _ := srcFile.Stat()
+	fileInfo, err := srcFile.Stat()
+	if err != nil {
+		output <- *taskForChannel(&task, fmt.Sprintf("downloadFile - Unable to create file [%s]", task.LocalFile), err, tasks.Failed, nil)
+		return err
+	}
 
 	logHandler(task.Server, fmt.Sprintf("Create file [%s]\n", task.LocalFile))
 	dstFile, err := os.Create(task.LocalFile)
@@ -95,8 +99,7 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 	defer dstFile.Close()
 
 	logHandler(task.Server, fmt.Sprintf("DOWNLOADING file[%s] Srv[%s] to[%s]\n", task.RemoteFileName, task.Server, task.LocalFile))
-	go printDownloadProgress(fileProgress)
-	fileProgress <- FileSizeInfo{FileName: task.LocalFile, Server: task.Server, FileSize: fileInfo.Size()}
+	go printDownloadProgress(FileSizeInfo{FileName: task.LocalFile, Server: task.Server, FileSize: fileInfo.Size()})
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
