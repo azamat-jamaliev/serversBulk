@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -57,24 +58,38 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	configPath := filepath.Dir(ex)
-	// configPath = "./build"
-	configPath = path.Join(configPath, "sebulk_config.json")
+	exePath := filepath.Dir(ex)
 
+	// os.O_APPEND
+	f, err := os.OpenFile(path.Join(exePath, "sebulk.log"), os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	log.Println(">>>>>START<<<<<<")
+	configPath := path.Join(exePath, "sebulk_config.json")
 	config, err := configProvider.GetFileConfig(configPath)
 	if err != nil {
+		log.Printf("[WARNING] cannot open config file [%s] ERROR:[%s]\n", configPath, err)
 		config = configProvider.GetDefaultConfig()
 	}
 
-	envs, err := configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "./test/ansible-inventory", "CLASSIC"), "30.")
+	envs, err := configProvider.GetAnsibleEnvironmentsConfig(path.Join(exePath, "./test/ansible-inventory", "CLASSIC"), "30.")
 	if err != nil {
-		envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "ansible-inventory", "CLASSIC"), "30.")
+		log.Printf("[INFO] cannot load Ansible config [./test/ansible-inventory] ERROR:[%s]\n", err)
+		envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(exePath, "ansible-inventory", "CLASSIC"), "30.")
 		if err != nil {
-			envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(filepath.Dir(ex), "CLASSIC"), "30.")
+			log.Printf("[WARNING] cannot load Ansible config [./ansible-inventory] ERROR:[%s]\n", err)
+			envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(exePath, "CLASSIC"), "30.")
 		}
 	}
 	if err == nil {
 		config.Environments = append(config.Environments, envs...)
+	} else {
+		log.Printf("[WARNING] cannot load Ansible config [./ansible-inventory] ERROR:[%s]\n", err)
 	}
 
 	app := tview.NewApplication()
@@ -106,11 +121,11 @@ func main() {
 		go StartTaskForEnv(config, taskName, "", mtime, cargo, cargo2, ServerLogHandler, ServerTaskStatusHandler)
 	}
 	saveServerLogHandler := func() {
-		for server, log := range ServerLog {
+		for server, srvLog := range ServerLog {
 			if len(server) > 0 {
 				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServerIP(server), "txt"))
-				if err := os.WriteFile(fileName, []byte(log), 0644); err != nil {
-					panic(err)
+				if err := os.WriteFile(fileName, []byte(srvLog), 0644); err != nil {
+					log.Panicf("[ERROR] cannot save ServerLog file to [%s] ERROR:[%s]\n", fileName, err)
 				}
 			}
 		}
@@ -129,6 +144,6 @@ func main() {
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}
 	if err := app.SetRoot(pagesView, true).EnableMouse(false).Run(); err != nil {
-		panic(err)
+		log.Panicf("[ERROR] app.SetRoot failed with ERROR:[%s]\n", err)
 	}
 }

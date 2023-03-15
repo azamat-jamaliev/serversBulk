@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"regexp"
 	"strconv"
@@ -92,12 +93,9 @@ func filterLogLines(server, logTest string, timeFrom time.Time) string {
 				timeInLog, err = time.Parse(datesTemplas[i], matchRe[1])
 			}
 			if err != nil {
-				panic(fmt.Sprintf("cannot convert value[%s] to date (from line:[%s])", matchRe[1], line))
+				log.Panicf("[ERROR] cannot convert value[%s] to date (from line:[%s])", matchRe[1], line)
 			}
 			begin = timeInLog.After(timeFrom) && !timeInLog.IsZero() && !timeFrom.IsZero()
-			// if begin {
-			// 	logHandler(server, fmt.Sprintf("timeInLog:[%v] timeFrom: [%v] and Both !Zero", timeInLog, timeFrom))
-			// }
 		}
 		if begin {
 			chunk = fmt.Sprintf("%s\n%s", chunk, line)

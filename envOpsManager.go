@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"strings"
@@ -98,6 +99,7 @@ func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 func PrintTask(task *tasks.ServerTask) {
 	statusHandler(task.Server, string(task.Status))
 	logHandler(task.Server, fmt.Sprintf("SERVER: %s NAME: %s\n STATUS: %s", task.Server, task.Type, task.Status))
+
 	if task.Status == tasks.Failed {
 		logHandler(task.Server, task.ExecuteCmd)
 		logHandler(task.Server, task.Error.Error())
@@ -106,11 +108,12 @@ func PrintTask(task *tasks.ServerTask) {
 	logHandler(task.Server, task.Log)
 	logHandler(task.Server, "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
 }
-func taskForChannel(task *tasks.ServerTask, log string, err error, newStatus tasks.TaskStatus, nextTask *tasks.TaskType) *tasks.ServerTask {
-	task.Log = log
+func taskForChannel(task *tasks.ServerTask, srvLog string, err error, newStatus tasks.TaskStatus, nextTask *tasks.TaskType) *tasks.ServerTask {
+	task.Log = srvLog
 	task.Error = err
 	if err != nil {
 		task.Status = tasks.Failed
+		log.Printf("[ERROR] task ERROR:[%s] LOG:[%s]", err, srvLog)
 	} else {
 		task.Status = newStatus
 		if nextTask != nil {
