@@ -31,6 +31,15 @@ type ConfigFileType struct {
 	Environments   []ConfigEnvironmentType
 }
 
+func (t *ConfigFileType) GetEnvironmentByName(envName string) *ConfigEnvironmentType {
+	for _, env := range t.Environments {
+		if env.Name == envName {
+			return &env
+		}
+	}
+	return nil
+}
+
 func GetEnvironemntConfig(jsonFileName *string) ConfigEnvironmentType {
 	jsonFile, err := os.Open(*jsonFileName)
 	if err != nil {

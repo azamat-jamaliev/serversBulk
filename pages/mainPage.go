@@ -6,6 +6,7 @@ import (
 	"sebulk/modules/configProvider"
 	"sebulk/modules/tasks"
 	"strconv"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -22,7 +23,8 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	serversList := tview.NewList()
 
 	lastItemSelectedHandler := func() {
-		doneHandlerFunc(&config.Environments[serversList.GetCurrentItem()],
+		envName, _ := serversList.GetItemText(serversList.GetCurrentItem())
+		doneHandlerFunc(config.GetEnvironmentByName(envName),
 			taskName,
 			mtimeField.GetText(),
 			commandField.GetText(),
@@ -31,8 +33,19 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 
 	ctrl, page, grid := NewMainPageController(appObj, lastItemSelectedHandler)
 
+	searchField = tview.NewInputField().
+		SetLabel("Quick search: ").
+		SetPlaceholder("environment name or server IP").
+		SetFieldWidth(40).
+		SetChangedFunc(func(text string) {
+			// if len(text) > 2 {
+			ctrl.ReloadList()
+			// }
+		})
+
 	ctrl.ReloadList = func() {
 		serversList.Clear()
+		searchText := strings.ToUpper(searchField.GetText())
 		for _, env := range config.Environments {
 			serverLine := ""
 			for _, server := range env.Servers {
@@ -42,20 +55,16 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 				}
 				serverLine = fmt.Sprintf("%s %s=[%s]", serverLine, server.Name, ipLine)
 			}
-			serversList.AddItem(env.Name, serverLine, 0, nil)
+			upperName := strings.ToUpper(env.Name)
+			upperServers := strings.ToUpper(serverLine)
+			if searchText == "" ||
+				strings.Contains(upperName, searchText) ||
+				strings.Contains(upperServers, searchText) {
+				serversList.AddItem(env.Name, serverLine, 0, nil)
+			}
 		}
 	}
 	ctrl.ReloadList()
-
-	searchField = tview.NewInputField().
-		SetLabel("Quick search: ").
-		SetPlaceholder("environment name or server IP").
-		SetFieldWidth(40).
-		SetChangedFunc(func(text string) {
-			if found := serversList.FindItems(text, text, false, true); len(found) > 0 {
-				serversList.SetCurrentItem(found[0])
-			}
-		})
 
 	commandField = tview.NewInputField().
 		SetLabel("command: ").
@@ -168,7 +177,8 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 
 	serversList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlE {
-			editHandlerFunc(&config.Environments[serversList.GetCurrentItem()])
+			envName, _ := serversList.GetItemText(serversList.GetCurrentItem())
+			editHandlerFunc(config.GetEnvironmentByName(envName))
 		} else if event.Key() == tcell.KeyCtrlA {
 			addHandlerFunc()
 		}
