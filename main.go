@@ -143,7 +143,7 @@ func main() {
 		pagesView.AddPage(pages.PageNameMain, mainPage, true, true)
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}
-	if err := app.SetRoot(pagesView, true).EnableMouse(false).Run(); err != nil {
+	if err := app.SetRoot(pagesView, true).EnableMouse(true).Run(); err != nil {
 		log.Panicf("[ERROR] app.SetRoot failed with ERROR:[%s]\n", err)
 	}
 }

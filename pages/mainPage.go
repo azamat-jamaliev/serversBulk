@@ -175,6 +175,18 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 	grid.AddItem(commandList, 1, 0, 1, 1, 0, 20, true).
 		AddItem(main, 1, 1, 1, 1, 0, 60, true)
 
+	// mouseCapture := serversList.GetMouseCapture()
+	serversList.SetMouseCapture(func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+		if action == tview.MouseLeftDoubleClick {
+			envName, _ := serversList.GetItemText(serversList.GetCurrentItem())
+			doneHandlerFunc(config.GetEnvironmentByName(envName),
+				taskName,
+				mtimeField.GetText(),
+				commandField.GetText(),
+				uploadToField.GetText())
+		}
+		return action, event
+	})
 	serversList.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyCtrlE {
 			envName, _ := serversList.GetItemText(serversList.GetCurrentItem())

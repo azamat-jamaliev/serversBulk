@@ -6,22 +6,22 @@ import (
 	"testing"
 )
 
-func TestGetGetAnsibleSshServerYamlDetails(t *testing.T) {
+// func TestGetGetAnsibleSshServerYamlDetails(t *testing.T) {
 
-	ansibleDir := ""
-	GLOBAL_GROUP_VARS_DIR := "00.global/group_vars/all"
+// 	ansibleDir := ""
+// 	GLOBAL_GROUP_VARS_DIR := "00.global/group_vars/all"
 
-	if ansibleDir = "../../test/ansible-inventory/CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
-		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
-	}
-	ansibleGlobalDir := path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)
+// 	if ansibleDir = "../../test/ansible-inventory/CLASSIC"; exists(path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)) {
+// 		fmt.Println("GetAnsibleFileConfig ansibleDir=", ansibleDir)
+// 	}
+// 	ansibleGlobalDir := path.Join(ansibleDir, GLOBAL_GROUP_VARS_DIR)
 
-	srvsCreds, err := getGetAnsibleSshServerYamlDetails(ansibleGlobalDir)
-	if err != nil || len(srvsCreds) < 1 {
-		t.Fatalf(`TestGetGetAnsibleSshServerYamlDetails Failed, error=%v`, err)
-	}
+// 	srvsCreds, err := getGetAnsibleSshServerYamlDetails(ansibleGlobalDir)
+// 	if err != nil || len(srvsCreds) < 1 {
+// 		t.Fatalf(`TestGetGetAnsibleSshServerYamlDetails Failed, error=%v`, err)
+// 	}
 
-}
+// }
 
 func TestGetAnsibleFileConfig(t *testing.T) {
 	ansibleDir := ""

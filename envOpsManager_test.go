@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 	"sebulk/modules/configProvider"
 	"sebulk/modules/tasks"
 	"testing"
@@ -11,15 +9,7 @@ import (
 
 // TestHelloName calls greetings.Hello with a name, checking
 // for a valid return value.
-func setTestLogFile(t *testing.T) {
-	f, err := os.OpenFile("./test/test.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		t.Fatalf("error opening file: %v", err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-}
+
 func TestEnvOpsManager_Upload(t *testing.T) {
 	str := "./test/local_test.json"
 	config := configProvider.GetEnvironemntConfig(&str)
