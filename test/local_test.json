@@ -1,0 +1,22 @@
+{
+    "Name": "local_test",
+    "Servers": [
+        {
+            "Name": "sebulk_test_ubuntu",
+            "LogFolders": [
+                "/home/ubuntu"
+            ],
+            "LogFilePattern": "*.log",
+            "Login": "test",
+            "Passowrd": "test",
+            "IdentityFile": "",
+            "BastionServer": "",
+            "BastionLogin": "",
+            "BastionIdentityFile": "",
+            "BastionPassword": "",
+            "IpAddresses": [
+                "127.0.0.1"
+            ]
+        }
+    ]
+}

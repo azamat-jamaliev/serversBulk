@@ -1,5 +1,8 @@
 .DS_store
 build/*
+test/ansible-inventory/*
+test/logs/*
+test/*.log
 # Binaries for programs and plugins
 *.exe
 *.exe~

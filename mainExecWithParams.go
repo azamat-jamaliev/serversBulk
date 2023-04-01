@@ -7,7 +7,7 @@ import (
 	"sebulk/modules/tasks"
 )
 
-func executeWithParams(newLogHandler func(server, log string),
+func mainExecWithParams(newLogHandler func(server, log string),
 	newStatusHandler func(server, status string)) bool {
 	var taskName tasks.TaskType
 	configFileName := flag.String("c", "./config/sebulk_config.json", "path to environment configuration file")
@@ -20,9 +20,10 @@ func executeWithParams(newLogHandler func(server, log string),
 	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
 
-	fmt.Printf("NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
+	fmt.Printf("!! NOTE: the files are filtered by mTime by default. \nCurrent mTime:%s\n", *modifTime)
 
 	cargo := ""
+	cargo2 := "/var/log/"
 	switch {
 	case *grepFor != "":
 		taskName = tasks.TypeGrepInLogs
@@ -44,7 +45,7 @@ func executeWithParams(newLogHandler func(server, log string),
 		taskName,
 		*serversName,
 		*modifTime,
-		cargo, newLogHandler, newStatusHandler)
+		cargo, cargo2, newLogHandler, newStatusHandler)
 
 	return true
 }

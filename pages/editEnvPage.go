@@ -1,7 +1,6 @@
 package pages
 
 import (
-	"fmt"
 	"sebulk/modules/configProvider"
 	"strings"
 
@@ -69,8 +68,8 @@ func EditEnvPage(appObj *tview.Application, env *configProvider.ConfigEnvironmen
 	}, func(text string) {
 		modifyEnv.Name = text
 	})
-	for _, srv := range modifyEnv.Servers {
-		addServer(editEnvForm, &srv)
+	for i := range modifyEnv.Servers {
+		addServer(editEnvForm, &modifyEnv.Servers[i])
 	}
 
 	page, _ := NewPageWithFooter(editEnvForm, "[Esc]=Cancel&Exit [tab]=next field [Ctrl+A]=Add Servers group [Ctrl+S]=Save&Exit")
@@ -79,9 +78,7 @@ func EditEnvPage(appObj *tview.Application, env *configProvider.ConfigEnvironmen
 		if event.Key() == tcell.KeyEsc {
 			exitHandlerFunc()
 		} else if event.Key() == tcell.KeyCtrlS {
-			fmt.Printf("modifyEnv=%v\n", *modifyEnv)
 			(*env) = (*modifyEnv)
-			fmt.Printf("env=%v\n", *env)
 			saveHandlerFunc()
 		} else if event.Key() == tcell.KeyCtrlA {
 			modifyEnv.Servers = append(modifyEnv.Servers, configProvider.ConfigServerType{})

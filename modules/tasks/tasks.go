@@ -10,6 +10,7 @@ const (
 	TypeArchiveGzip     TaskType = "TypeArchiveGzip"
 	TypeDownloadArchive TaskType = "DownloadLogs"
 	TypeGrepInLogs      TaskType = "GrepInLogs"
+	TypeAwkInLogs       TaskType = "AwkInLogs"
 	TypeExecuteCommand  TaskType = "ExecuteCommand"
 )
 
@@ -29,6 +30,7 @@ type ServerTask struct {
 	Log            string
 	ModifTime      string
 	CommandCargo   string
+	CommandCargo2  string
 	ExecuteCmd     string
 	LocalFile      string
 	// GrepFor        string
