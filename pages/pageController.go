@@ -93,7 +93,7 @@ func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()
 }
 func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*PageController, *tview.Flex, *tview.Grid) {
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
-	controller.header = newPrimitive("!!! SeBulk v1.0.1 !!! \nworks when GrayLog or Ansible is not available")
+	controller.header = newPrimitive("!!! SeBulk v1.0.2 !!! \nworks when GrayLog or Ansible is not available")
 	controller.lastItemExitHandler = lastItemSelectedHandlerFunc
 	grid := tview.NewGrid().
 		SetRows(2, 0).

@@ -146,7 +146,7 @@ func getFindExecCommad(logFolders []string, logFilePattern, mTime, commandToExec
 	// strGrep := fmt.Sprintf("grep --color=auto -H -A25 -B3 -i \"%s\" {}  \\;", task.CommandCargo)
 	cmd := "cd ~"
 	for _, folder := range logFolders {
-		cmd = fmt.Sprintf("%s; find %s ! -readable -prune -o -type f -iname \"%s\" -mtime %s -exec %s \\;", cmd, folder, logFilePattern, mTime, commandToExecute)
+		cmd = fmt.Sprintf("%s; find %s -type f -iname \"%s\" -mtime %s -exec %s \\;", cmd, folder, logFilePattern, mTime, commandToExecute)
 	}
 	return cmd
 }
