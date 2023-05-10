@@ -12,13 +12,15 @@ var serverStatusList *tview.List
 var getServerLog func(server string) string
 
 func DisplayServerTaskStatus(server, status string) {
-	if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
-		_, secondText := serverStatusList.GetItemText(serverItems[0])
-		if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
-			serverStatusList.SetItemText(serverItems[0], server, status)
+	if serverStatusList != nil {
+		if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
+			_, secondText := serverStatusList.GetItemText(serverItems[0])
+			if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
+				serverStatusList.SetItemText(serverItems[0], server, status)
+			}
+		} else {
+			serverStatusList.AddItem(server, status, 0, nil)
 		}
-	} else {
-		serverStatusList.AddItem(server, status, 0, nil)
 	}
 }
 func DisplayServerLog(newText string) {

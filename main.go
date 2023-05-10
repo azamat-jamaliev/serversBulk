@@ -19,12 +19,16 @@ import (
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
 var muStatus sync.Mutex
 var muLog sync.Mutex
+var execViaCLI, execNoUI bool
 
 func ServerTaskStatusHandler(server, status string) {
-	muStatus.Lock()
-	ServerStatus[server] = status
-	pages.DisplayServerTaskStatus(server, string(status))
-	muStatus.Unlock()
+	if !execNoUI {
+		muStatus.Lock()
+		ServerStatus[server] = status
+
+		pages.DisplayServerTaskStatus(server, string(status))
+		muStatus.Unlock()
+	}
 }
 func ServerLogHandler(server, logRecord string) {
 	muLog.Lock()
@@ -36,6 +40,10 @@ func ServerLogHandler(server, logRecord string) {
 	pages.DisplayServerLog(ServerLog[server])
 	muLog.Unlock()
 }
+func NoUiServerLogHandler(server, logRecord string) {
+	fmt.Printf("Server: %s execution log: %s\n", server, logRecord)
+}
+
 func GetServerLog(server string) string {
 	if val, ok := ServerLog[server]; ok {
 		return val
@@ -134,16 +142,20 @@ func main() {
 	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 
-	if mainExecWithParams(ServerLogHandler, ServerTaskStatusHandler) {
-		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, nil, saveServerLogHandler)
-		pagesView.AddPage(pages.PageNameResults, resultsPage, true, true)
-		resultPageController.SetDefaultFocus()
+	if execViaCLI, execNoUI = mainExecWithParams(ServerLogHandler, NoUiServerLogHandler, ServerTaskStatusHandler); execViaCLI {
+		if !execNoUI {
+			resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, nil, saveServerLogHandler)
+			pagesView.AddPage(pages.PageNameResults, resultsPage, true, true)
+			resultPageController.SetDefaultFocus()
+		}
 	} else {
 		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, envExitHandler, saveServerLogHandler)
 		pagesView.AddPage(pages.PageNameMain, mainPage, true, true)
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}
-	if err := app.SetRoot(pagesView, true).EnableMouse(true).Run(); err != nil {
-		log.Panicf("[ERROR] app.SetRoot failed with ERROR:[%s]\n", err)
+	if !execNoUI {
+		if err := app.SetRoot(pagesView, true).EnableMouse(true).Run(); err != nil {
+			log.Panicf("[ERROR] app.SetRoot failed with ERROR:[%s]\n", err)
+		}
 	}
 }

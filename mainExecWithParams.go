@@ -8,7 +8,8 @@ import (
 )
 
 func mainExecWithParams(newLogHandler func(server, log string),
-	newStatusHandler func(server, status string)) bool {
+	noUiLogHandler func(server, log string),
+	newStatusHandler func(server, status string)) (bool, bool) {
 	var taskName tasks.TaskType
 	configFileName := flag.String("c", "./config/sebulk_config.json", "path to environment configuration file")
 	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")
@@ -17,6 +18,7 @@ func mainExecWithParams(newLogHandler func(server, log string),
 	executeCmd := flag.String("e", "", "execute given command:\nsebulk --servers SERVER_GROUP_NAME -e \"curl -v -g http://localhost:28080/api/v1/monitoring/health\"\n\tto get SERVER_GROUP_NAME health from all SERVER_GROUP_NAME nodes")
 	localDir := flag.String("d", "", "folder where log files should be downloaded")
 	uploadLocalFile := flag.String("u", "", "File which will be uploaded to /var/tmp to the target servers")
+	executeWithoutUI := flag.Bool("no-ui", false, "execute without UI")
 	// logFilePattern := flag.String("f", "", "log File pattern: i.e. *.log the value will overwrite value in config")
 	flag.Parse()
 
@@ -37,15 +39,28 @@ func mainExecWithParams(newLogHandler func(server, log string),
 	case *uploadLocalFile != "":
 		taskName = tasks.TypeUploadFile
 	default:
-		return false
+		if *executeWithoutUI {
+			fmt.Printf("NOTE: flag `no-ui` will be ignored since no other CLI parameters passed \n")
+		}
+		return false, false
 	}
 
 	config := configProvider.GetEnvironemntConfig(configFileName)
-	go StartTaskForEnv(&config,
-		taskName,
-		*serversName,
-		*modifTime,
-		cargo, cargo2, newLogHandler, newStatusHandler)
+	logHandlerFunc := newLogHandler
+	if *executeWithoutUI {
+		logHandlerFunc = noUiLogHandler
+		StartTaskForEnv(&config,
+			taskName,
+			*serversName,
+			*modifTime,
+			cargo, cargo2, logHandlerFunc, newStatusHandler)
+	} else {
+		go StartTaskForEnv(&config,
+			taskName,
+			*serversName,
+			*modifTime,
+			cargo, cargo2, logHandlerFunc, newStatusHandler)
+	}
 
-	return true
+	return true, *executeWithoutUI
 }
