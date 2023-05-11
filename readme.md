@@ -3,6 +3,8 @@
   - [Motivation and introduction](#motivation-and-introduction)
   - [Functionality overview](#functionality-overview)
     - [Different methods to use SeBulk](#different-methods-to-use-sebulk)
+  - [Execute with UI](#execute-with-ui)
+    - [Create config file from UI mode](#create-config-file-from-ui-mode)
   - [Execute via CLI](#execute-via-cli)
     - [to execute command](#to-execute-command)
     - [for search](#for-search)
@@ -10,9 +12,9 @@
     - [upload file to servers](#upload-file-to-servers)
   - [Config file examples](#config-file-examples)
     - [If connection should be performed via Bastion server](#if-connection-should-be-performed-via-bastion-server)
-      - [Bastion server password authentication is used](#bastion-server-password-authentication-is-used)
-      - [Bastion server Public/Private Key File authentication is used](#bastion-server-publicprivate-key-file-authentication-is-used)
-    - [Config without Bastion server](#config-without-bastion-server)
+      - [Bastion (Jump) server password authentication is used](#bastion-jump-server-password-authentication-is-used)
+      - [Bastion (Jump) server Public/Private Key File authentication is used](#bastion-jump-server-publicprivate-key-file-authentication-is-used)
+    - [Config without Bastion (Jump) server](#config-without-bastion-jump-server)
   - [Build](#build)
     - [Cross platform: Build for Linux](#cross-platform-build-for-linux)
     - [Cross platform: Build for Windows](#cross-platform-build-for-windows)
@@ -41,14 +43,67 @@ The `SeBulk` allows to
 ### Different methods to use SeBulk 
 `SeBulk` can be executed in console (terminal, cli, shell), for example if you need automated execution of the application, for example: 
 ```
-./sebulk -s "\[ERROR" > ~/Downloads/output.txt
+./sebulk -s "\[ERROR" -no-ui > ~/Downloads/output.txt
 ```
 (see more details in the sections below)
 
 Alternatively you can use Textual UI:
-![enter image description here](./doc/pictures/mainPage.png)
+![Sebulk Main page](./doc/pictures/mainPage.png)
 The UI is designed to be user friendly, additional key combinations are displayed in the bottom portion of the screen.
 Anyway if you have recommendations about UI improvements (or improvement of any other functionality) - please contact me.
+
+## Execute with UI
+By default application is executed with textual UI.
+It can be executed in the same way as all other applications: with double click on executable file or from terminal without parameters.
+
+`SeBulk` uses config file with environment and servers, to connect to the server via SSH and execute commands on the servers.  
+However, when `SeBulk` is executed in UI mode it generates _demo_ environment.
+
+### Create config file from UI mode
+Default config file can be geenrated using the executable.
+Run `SeBulk`.
+1. Select convinuent option in the left-side list, for example: `Download logs`
+![Sebulk Edit Environemnt in UI Step1-3](./doc/pictures/EditEnv1.png)
+1. Press arrow keys / or tab / or enter (or just click on environment name on the right-side list, for example `EXAMPLE_environment`)
+2. Press Ctrl+E keys on keyboard
+![Sebulk Edit Environemnt in UI Step4-5](./doc/pictures/EditEnv2.png)
+4. Populate parameters like IP address(the field allows multiple server IPs separated by end of line), ssh credentials and etc. :exclamation: NOTE: the credentials will be stored as plain text in JSON config file, so it's recomended to use `ssh identity file` (SSH private key file in OpenSSH format, see more details in: https://www.openssh.com/).
+5. Press Ctrl+S to save changes (in this case file `sebulk_config.json` will be generated), see example content of the file brlow:
+```json
+{
+    "DownloadFolder": ".",
+    "UploadFolder": "/var/tmp",
+    "LogsMtime": -0.2,
+    "Environments": [
+        {
+            "Name": "EXAMPLE_environemnt",
+            "DoNotSave": false,
+            "Servers": [
+                {
+                    "Name": "example_servers_group1",
+                    "LogFolders": [
+                        "/var/log"
+                    ],
+                    "LogFilePattern": "*.log*",
+                    "Login": "test",
+                    "Passowrd": "test",
+                    "IdentityFile": "",
+                    "BastionServer": "",
+                    "BastionLogin": "",
+                    "BastionIdentityFile": "",
+                    "BastionPassword": "",
+                    "IpAddresses": [
+                        "127.0.0.1",
+                        "192.168.0.12"
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+Them you can modify the file directly to create additional environments.
+:exclamation: NOTE: `sebulk_config.json` file format is different that the format of the files which are user in command-line mode, because CLI mode works for particular and UI mode allows to select from the list of environments.
 
 ## Execute via CLI
 ### to execute command
@@ -57,7 +112,7 @@ Anyway if you have recommendations about UI improvements (or improvement of any 
 ```
 ### for search
 ```
-./sebulk -s "\[ERROR" > ~/Downloads/output.txt
+./sebulk -s "\[ERROR" -no-ui > ~/Downloads/output.txt
 ```
 ### for logs download
 ```
@@ -73,7 +128,7 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
 
 ## Config file examples
 ### If connection should be performed via Bastion server
-#### Bastion server password authentication is used
+#### Bastion (Jump) server password authentication is used
 ```yaml
 {
     "servers": [
@@ -96,7 +151,7 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
 }
 ```
 
-#### Bastion server Public/Private Key File authentication is used
+#### Bastion (Jump) server Public/Private Key File authentication is used
 ```yaml
 {
     "servers": [
@@ -118,7 +173,7 @@ __NOTE:__ the file will be uploaded to /var/tmp folder (if folder does not exist
     ]
 }
 ```
-### Config without Bastion server
+### Config without Bastion (Jump) server
 ```yaml
 {
     "servers": [
