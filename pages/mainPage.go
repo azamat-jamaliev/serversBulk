@@ -196,6 +196,7 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 		}
 		return event
 	})
+	ctrl.primitiveHint[serversList] = "[Ctrl+E]=Edit [Ctrl+A]=Add [Enter]=start task"
 
 	return page, ctrl
 }

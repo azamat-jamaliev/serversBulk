@@ -10,7 +10,7 @@ const (
 	PageNameResults string = "PageNameResults"
 )
 
-func newPrimitive(text string) tview.Primitive {
+func newPrimitive(text string) *tview.TextView {
 	return tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(text)
