@@ -20,6 +20,7 @@
     - [Cross platform: Build for Windows](#cross-platform-build-for-windows)
   - [Testing](#testing)
     - [Debug](#debug)
+- [QA](#qa)
 
 
 
@@ -236,3 +237,8 @@ execute ./sebulk
 update "processId" in .vscode/launch.json file 
 
 use ">" in Run and Debug
+
+# QA
+1. What is Bastion server? 
+Answer: see more information in: https://goteleport.com/blog/ssh-bastion-host/
+
