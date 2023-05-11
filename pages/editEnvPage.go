@@ -12,7 +12,7 @@ func notEmpty(str string) bool {
 	return len(strings.TrimSpace(str)) > 0
 }
 func addServer(editEnvForm *tview.Form, srv *configProvider.ConfigServerType) {
-	editEnvForm.AddInputField("Server Name: ", srv.Name, 20, func(textToCheck string, lastChar rune) bool {
+	editEnvForm.AddInputField("Server's Group Name: ", srv.Name, 20, func(textToCheck string, lastChar rune) bool {
 		return notEmpty(textToCheck)
 	}, func(text string) {
 		srv.Name = text

@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -10,9 +11,11 @@ import (
 
 type PageController struct {
 	focusOrder          []tview.Primitive
+	primitiveHint       map[tview.Primitive]string
 	app                 *tview.Application
 	header              tview.Primitive
-	footer              tview.Primitive
+	footer              *tview.TextView
+	defaultFooterText   string
 	lastItemExitHandler func()
 	ReloadList          func()
 }
@@ -24,6 +27,12 @@ func (pCtrl *PageController) addFocus(primitive tview.Primitive) tview.Primitive
 }
 func (pCtrl *PageController) clearFocus() {
 	pCtrl.focusOrder = []tview.Primitive{}
+}
+func (pCtrl *PageController) setDefaultFooterText() {
+	pCtrl.footer.SetText(pCtrl.defaultFooterText)
+}
+func (pCtrl *PageController) setFooterText(newFootertext string) {
+	pCtrl.footer.SetText(fmt.Sprintf("%s; %s", pCtrl.defaultFooterText, newFootertext))
 }
 
 func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
@@ -62,8 +71,12 @@ func (pCtrl *PageController) setNewFocus(event *tcell.EventKey) {
 				if newFocusNum >= len(pCtrl.focusOrder) && event.Key() == tcell.KeyEnter && pCtrl.lastItemExitHandler != nil {
 					pCtrl.lastItemExitHandler()
 				} else if newFocusNum >= 0 && newFocusNum < len(pCtrl.focusOrder) {
-					// newFocusNum := int(math.Abs(float64(i+d))) % len(pCtrl.focusOrder)
 					pCtrl.app.SetFocus(pCtrl.focusOrder[newFocusNum])
+					if hint, hasHint := pCtrl.primitiveHint[pCtrl.focusOrder[newFocusNum]]; hasHint {
+						pCtrl.setFooterText(hint)
+					} else {
+						pCtrl.setDefaultFooterText()
+					}
 				}
 				return
 			}
@@ -85,27 +98,30 @@ func (pCtrl *PageController) SetDefaultFocus() {
 
 func NewPageController(appObj *tview.Application, lastItemExitHandlerFunc func()) *PageController {
 	p := &PageController{
-		focusOrder: []tview.Primitive{},
-		app:        appObj,
+		focusOrder:    []tview.Primitive{},
+		app:           appObj,
+		primitiveHint: make(map[tview.Primitive]string),
 	}
 	app = appObj
 	return p
 }
 func NewMainPageController(appObj *tview.Application, lastItemSelectedHandlerFunc func()) (*PageController, *tview.Flex, *tview.Grid) {
 	controller := NewPageController(appObj, lastItemSelectedHandlerFunc)
-	controller.header = newPrimitive("!!! SeBulk v1.0.1 !!! \nworks when GrayLog or Ansible is not available")
+	controller.header = newPrimitive("!!! SeBulk v1.0.3 !!! \nworks when GrayLog or Ansible is not available")
 	controller.lastItemExitHandler = lastItemSelectedHandlerFunc
 	grid := tview.NewGrid().
 		SetRows(2, 0).
 		SetColumns(30, 0).
 		SetBorders(true).
 		AddItem(controller.header, 0, 0, 1, 2, 0, 0, false)
-	page, f := NewPageWithFooter(grid, "[ESC]=go back   [Ctrl+C]=to exit")
+
+	controller.defaultFooterText = "[ESC]=go back [Ctrl+C]=to exit"
+	page, f := NewPageWithFooter(grid, controller.defaultFooterText)
 	controller.footer = f
 
 	return controller, page, grid
 }
-func NewPageWithFooter(mainpart tview.Primitive, footer string) (*tview.Flex, tview.Primitive) {
+func NewPageWithFooter(mainpart tview.Primitive, footer string) (*tview.Flex, *tview.TextView) {
 	f := newPrimitive(footer)
 	page := tview.NewFlex().
 		SetDirection(tview.FlexRow).

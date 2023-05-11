@@ -87,9 +87,9 @@ func GetDefaultConfig() ConfigFileType {
 		LogsMtime:      &f,
 		Environments: []ConfigEnvironmentType{
 			{
-				Name: "EXAMPLE_local_test",
+				Name: "EXAMPLE_environemnt",
 				Servers: []ConfigServerType{{
-					Name:           "sebulk_test_ubuntu",
+					Name:           "example_servers_group1",
 					IpAddresses:    []string{"127.0.0.1"},
 					LogFolders:     []string{"/var/log"},
 					LogFilePattern: "*.log*",
