@@ -99,7 +99,16 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 	defer dstFile.Close()
 
 	logHandler(task.Server, fmt.Sprintf("DOWNLOADING file[%s] Srv[%s] to[%s]\n", task.RemoteFileName, task.Server, task.LocalFile))
-	go printDownloadProgress(FileSizeInfo{FileName: task.LocalFile, Server: task.Server, FileSize: fileInfo.Size()})
+	logHandler(task.Server, fmt.Sprintf("Open file [%s] on server [%s]\n", task.RemoteFileName, task.Server))
+	if fileInfo.Size() > 0 {
+		go printDownloadProgress(FileSizeInfo{FileName: task.LocalFile, Server: task.Server, FileSize: fileInfo.Size()})
+	} else {
+		err = fmt.Errorf("[ERROR] file=[%s] fileInfo.Size()<=0 - means that logs were not found or not enough disk space to create archive with logs", task.RemoteFileName)
+		if err != nil {
+			output <- *taskForChannel(&task, fmt.Sprintf("Archive with log files is empty [%s]", task.RemoteFileName), err, tasks.Failed, nil)
+			return err
+		}
+	}
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
