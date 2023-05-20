@@ -100,6 +100,7 @@ func PrintTask(task *tasks.ServerTask) {
 	statusHandler(task.Server, string(task.Status))
 	logHandler(task.Server, fmt.Sprintf("SERVER: %s NAME: %s\n STATUS: %s", task.Server, task.Type, task.Status))
 
+	logHandler(task.Server, "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
 	if task.Status == tasks.Failed {
 		logHandler(task.Server, task.ExecuteCmd)
 		logHandler(task.Server, task.Error.Error())

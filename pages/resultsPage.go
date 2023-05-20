@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"fmt"
 	"sebulk/modules/tasks"
 
 	"github.com/gdamore/tcell/v2"
@@ -28,14 +29,17 @@ func DisplayServerLog(newText string) {
 	app.Draw()
 }
 func setServerLogTest(newText string) {
-	if len(newText) < 5000 {
+	maxSize := 2500
+	if len(newText) <= maxSize {
 		serverLogView.SetText(newText)
 	} else {
-		serverLogView.SetText("The content is too big - Please use [CRTL+S] to seve it into the file")
+		warning := "The content is too big - Please use [CRTL+S] to save full content into files"
+		shortnewTest := newText[len(newText)-maxSize:]
+		serverLogView.SetText(fmt.Sprintf(">>>>%s \n%s\n>>>>%s", warning, shortnewTest, warning))
 	}
 }
-func ResultsPage(appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func(), saveLogsHandlerFunc func()) (tview.Primitive, *PageController) {
-	ctrl, page, grid := NewMainPageController(appObj, func() {})
+func ResultsPage(version string, appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func(), saveLogsHandlerFunc func()) (tview.Primitive, *PageController) {
+	ctrl, page, grid := NewMainPageController(version, appObj, func() {})
 
 	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()

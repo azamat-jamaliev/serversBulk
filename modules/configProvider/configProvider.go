@@ -91,7 +91,7 @@ func GetDefaultConfig() ConfigFileType {
 				Servers: []ConfigServerType{{
 					Name:           "example_servers_group1",
 					IpAddresses:    []string{"127.0.0.1"},
-					LogFolders:     []string{"/var/log"},
+					LogFolders:     []string{"~/"},
 					LogFilePattern: "*.log*",
 					Login:          "test",
 					Passowrd:       "test",

@@ -23,7 +23,8 @@ func executeOnServer(serverConf *configProvider.ConfigServerType, server, cmd st
 func executeWithConnection(sshAdv *sshHelper.SshAdvanced, server, cmd string) (string, error) {
 	statusHandler(server, fmt.Sprintf("EXECUTING.. command:[%s]", cmd))
 	logHandler(server, fmt.Sprintf("executing command:[%s] on ssh server:[%s]", cmd, server))
-	buff, e := sshAdv.NewSession().Output(cmd)
+	sess := sshAdv.NewSession()
+	buff, e := sess.CombinedOutput(cmd)
 	if e != nil {
 		logHandler(server, fmt.Sprintf("error while executing cmd:[%s] os server [%s], cmd_output[%s]\nERROR:%v", cmd, server, buff, e))
 	}

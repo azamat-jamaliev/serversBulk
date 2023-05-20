@@ -13,8 +13,11 @@ import (
 
 	// _ "net/http/pprof"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
+
+const VERSION = "v1.0.5"
 
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
 var muStatus sync.Mutex
@@ -22,6 +25,7 @@ var muLog sync.Mutex
 var execViaCLI, execNoUI bool
 
 func ServerTaskStatusHandler(server, status string) {
+	log.Printf("SERVER: %s: TASK_STATUS: %s\n", server, status)
 	if !execNoUI {
 		muStatus.Lock()
 		ServerStatus[server] = status
@@ -31,6 +35,7 @@ func ServerTaskStatusHandler(server, status string) {
 	}
 }
 func ServerLogHandler(server, logRecord string) {
+	log.Printf("SERVER: %s: %s\n", server, logRecord)
 	muLog.Lock()
 	if val, ok := ServerLog[server]; ok {
 		ServerLog[server] = fmt.Sprintf("%s\n%s", val, logRecord)
@@ -41,7 +46,7 @@ func ServerLogHandler(server, logRecord string) {
 	muLog.Unlock()
 }
 func NoUiServerLogHandler(server, logRecord string) {
-	fmt.Printf("Server: %s execution log: %s\n", server, logRecord)
+	fmt.Printf("SERVER: %s: %s\n", server, logRecord)
 }
 
 func GetServerLog(server string) string {
@@ -68,8 +73,15 @@ func main() {
 	}
 	exePath := filepath.Dir(ex)
 
+	logFile := path.Join(exePath, "sebulk.log")
+	if exists(logFile) {
+		err := os.Remove(logFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	// os.O_APPEND
-	f, err := os.OpenFile(path.Join(exePath, "sebulk.log"), os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
@@ -129,27 +141,47 @@ func main() {
 		go StartTaskForEnv(config, taskName, "", mtime, cargo, cargo2, ServerLogHandler, ServerTaskStatusHandler)
 	}
 	saveServerLogHandler := func() {
+		var err error
 		for server, srvLog := range ServerLog {
 			if len(server) > 0 {
 				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServerIP(server), "txt"))
-				if err := os.WriteFile(fileName, []byte(srvLog), 0644); err != nil {
+				if err = os.WriteFile(fileName, []byte(srvLog), 0644); err != nil {
 					log.Panicf("[ERROR] cannot save ServerLog file to [%s] ERROR:[%s]\n", fileName, err)
+					break
 				}
 			}
 		}
+
+		message := fmt.Sprintf("The files were saved to the folder: %s", config.DownloadFolder)
+		if err != nil {
+			message = fmt.Sprintf("ERROR unable to save files to the folder: %s", config.DownloadFolder)
+		}
+		modal := tview.NewModal().
+			SetText(message).
+			AddButtons([]string{"OK"}).
+			SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+				pagesView.SwitchToPage(pages.PageNameResults)
+				pagesView.RemovePage("modal")
+				resultPageController.SetDefaultFocus()
+			})
+		pagesView.AddAndSwitchToPage("modal", modal, false)
+		app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+			return event
+		})
+		app.SetFocus(modal)
 	}
 
-	mainPage, mainPageController = pages.MainPage(app, &config, configDoneHandler, configEditHandler, configAddHandler)
+	mainPage, mainPageController = pages.MainPage(VERSION, app, &config, configDoneHandler, configEditHandler, configAddHandler)
 	mainPageController.SetDefaultFocus()
 
 	if execViaCLI, execNoUI = mainExecWithParams(ServerLogHandler, NoUiServerLogHandler, ServerTaskStatusHandler); execViaCLI {
 		if !execNoUI {
-			resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, nil, saveServerLogHandler)
+			resultsPage, resultPageController = pages.ResultsPage(VERSION, app, GetServerLog, nil, saveServerLogHandler)
 			pagesView.AddPage(pages.PageNameResults, resultsPage, true, true)
 			resultPageController.SetDefaultFocus()
 		}
 	} else {
-		resultsPage, resultPageController = pages.ResultsPage(app, GetServerLog, envExitHandler, saveServerLogHandler)
+		resultsPage, resultPageController = pages.ResultsPage(VERSION, app, GetServerLog, envExitHandler, saveServerLogHandler)
 		pagesView.AddPage(pages.PageNameMain, mainPage, true, true)
 		pagesView.AddPage(pages.PageNameResults, resultsPage, true, false)
 	}
@@ -158,4 +190,15 @@ func main() {
 			log.Panicf("[ERROR] app.SetRoot failed with ERROR:[%s]\n", err)
 		}
 	}
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
 }

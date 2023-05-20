@@ -13,7 +13,7 @@ import (
 )
 
 // *tview.Application, getServerLogFunc func(server string) string)
-func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
+func MainPage(version string, appObj *tview.Application, config *configProvider.ConfigFileType,
 	doneHandlerFunc func(config *configProvider.ConfigEnvironmentType, taskName tasks.TaskType, mtime, cargo, cargo2 string),
 	editHandlerFunc func(config *configProvider.ConfigEnvironmentType),
 	addHandlerFunc func()) (tview.Primitive, *PageController) {
@@ -31,7 +31,7 @@ func MainPage(appObj *tview.Application, config *configProvider.ConfigFileType,
 			uploadToField.GetText())
 	}
 
-	ctrl, page, grid := NewMainPageController(appObj, lastItemSelectedHandler)
+	ctrl, page, grid := NewMainPageController(version, appObj, lastItemSelectedHandler)
 
 	searchField = tview.NewInputField().
 		SetLabel("Quick search: ").
