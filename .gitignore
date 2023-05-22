@@ -1,4 +1,5 @@
 .DS_store
+*.sh
 build/*
 test/ansible-inventory/*
 test/logs/*
