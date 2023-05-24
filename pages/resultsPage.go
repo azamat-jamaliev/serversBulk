@@ -12,23 +12,23 @@ var serverLogView *tview.TextView
 var serverStatusList *tview.List
 var getServerLog func(server string) string
 
-func DisplayServerTaskStatus(server, status string) {
+func DisplayServerTaskStatus(serverNameIp, status string) {
 	if serverStatusList != nil {
-		if serverItems := serverStatusList.FindItems(server, "", true, false); len(serverItems) > 0 {
+		if serverItems := serverStatusList.FindItems(serverNameIp, "", true, false); len(serverItems) > 0 {
 			_, secondText := serverStatusList.GetItemText(serverItems[0])
 			if secondText != string(tasks.Failed) && secondText != string(tasks.Finished) {
-				serverStatusList.SetItemText(serverItems[0], server, status)
+				serverStatusList.SetItemText(serverItems[0], serverNameIp, status)
 			}
 		} else {
-			serverStatusList.AddItem(server, status, 0, nil)
+			serverStatusList.AddItem(serverNameIp, status, 0, nil)
 		}
 	}
 }
 func DisplayServerLog(newText string) {
-	setServerLogTest(newText)
+	setServerLogText(newText)
 	app.Draw()
 }
-func setServerLogTest(newText string) {
+func setServerLogText(newText string) {
 	maxSize := 2500
 	if len(newText) <= maxSize {
 		serverLogView.SetText(newText)
@@ -38,14 +38,14 @@ func setServerLogTest(newText string) {
 		serverLogView.SetText(fmt.Sprintf(">>>>%s \n%s\n>>>>%s", warning, shortnewTest, warning))
 	}
 }
-func ResultsPage(version string, appObj *tview.Application, getServerLogFunc func(server string) string, exitHandlerFunc func(), saveLogsHandlerFunc func()) (tview.Primitive, *PageController) {
+func ResultsPage(version string, appObj *tview.Application, getServerLogFunc func(serverNameIp string) string, exitHandlerFunc func(), saveLogsHandlerFunc func()) (tview.Primitive, *PageController) {
 	ctrl, page, grid := NewMainPageController(version, appObj, func() {})
 
 	serverLogView = tview.NewTextView()
 	serverStatusList = tview.NewList()
 	getServerLog = getServerLogFunc
 	serverStatusList.SetChangedFunc(func(index int, mainText string, secondaryText string, shortcut rune) {
-		setServerLogTest(getServerLog(mainText))
+		setServerLogText(getServerLog(mainText))
 	})
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if exitHandlerFunc != nil && event.Key() == tcell.KeyEsc {

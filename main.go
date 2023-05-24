@@ -17,40 +17,43 @@ import (
 	"github.com/rivo/tview"
 )
 
-const VERSION = "v1.0.5"
+const VERSION = "v1.0.6"
 
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
 var muStatus sync.Mutex
 var muLog sync.Mutex
 var execViaCLI, execNoUI bool
 
-func ServerTaskStatusHandler(server, status string) {
-	log.Printf("SERVER: %s: TASK_STATUS: %s\n", server, status)
+func ServerTaskStatusHandler(server, serverGroup, status string) {
+	serverNameIp := fileNameFromServer(server, serverGroup)
+	log.Printf("SERVER: %s: TASK_STATUS: %s\n", serverNameIp, status)
 	if !execNoUI {
 		muStatus.Lock()
-		ServerStatus[server] = status
+		ServerStatus[serverNameIp] = status
 
-		pages.DisplayServerTaskStatus(server, string(status))
+		pages.DisplayServerTaskStatus(serverNameIp, string(status))
 		muStatus.Unlock()
 	}
 }
-func ServerLogHandler(server, logRecord string) {
-	log.Printf("SERVER: %s: %s\n", server, logRecord)
+func ServerLogHandler(server, serverGroup, logRecord string) {
+	serverNameIp := fileNameFromServer(server, serverGroup)
+	log.Printf("SERVER: %s: %s\n", serverNameIp, logRecord)
 	muLog.Lock()
-	if val, ok := ServerLog[server]; ok {
-		ServerLog[server] = fmt.Sprintf("%s\n%s", val, logRecord)
+	if val, ok := ServerLog[serverNameIp]; ok {
+		ServerLog[serverNameIp] = fmt.Sprintf("%s\n%s", val, logRecord)
 	} else {
-		ServerLog[server] = logRecord
+		ServerLog[serverNameIp] = logRecord
 	}
-	pages.DisplayServerLog(ServerLog[server])
+	pages.DisplayServerLog(ServerLog[serverNameIp])
 	muLog.Unlock()
 }
-func NoUiServerLogHandler(server, logRecord string) {
-	fmt.Printf("SERVER: %s: %s\n", server, logRecord)
+func NoUiServerLogHandler(server, serverGroup, logRecord string) {
+	serverNameIp := fileNameFromServer(server, serverGroup)
+	fmt.Printf("SERVER: %s: %s\n", serverNameIp, logRecord)
 }
 
-func GetServerLog(server string) string {
-	if val, ok := ServerLog[server]; ok {
+func GetServerLog(serverNameIp string) string {
+	if val, ok := ServerLog[serverNameIp]; ok {
 		return val
 	}
 	return ""
@@ -142,9 +145,11 @@ func main() {
 	}
 	saveServerLogHandler := func() {
 		var err error
+		count := 0
 		for server, srvLog := range ServerLog {
 			if len(server) > 0 {
-				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServerIP(server), "txt"))
+				count++
+				fileName := path.Join(config.DownloadFolder, fmt.Sprintf("%s.%s", fileNameFromServer(server, fmt.Sprintf("logs%d", count)), "txt"))
 				if err = os.WriteFile(fileName, []byte(srvLog), 0644); err != nil {
 					log.Panicf("[ERROR] cannot save ServerLog file to [%s] ERROR:[%s]\n", fileName, err)
 					break

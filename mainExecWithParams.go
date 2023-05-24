@@ -7,9 +7,9 @@ import (
 	"sebulk/modules/tasks"
 )
 
-func mainExecWithParams(newLogHandler func(server, log string),
-	noUiLogHandler func(server, log string),
-	newStatusHandler func(server, status string)) (bool, bool) {
+func mainExecWithParams(newLogHandler func(server, serverGroup, log string),
+	noUiLogHandler func(server, serverGroup, log string),
+	newStatusHandler func(server, serverGroup, status string)) (bool, bool) {
 	var taskName tasks.TaskType
 	configFileName := flag.String("c", "./config/sebulk_config.json", "path to environment configuration file")
 	serversName := flag.String("servers", "", "to search/download only from the servers with NAME='servers', \n\tfor example if you need to download from SERVER_GROUP_NAME\n\tserevers you can use parameter: `--servers SERVER_GROUP_NAME` ")

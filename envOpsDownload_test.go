@@ -17,10 +17,10 @@ func TestEnvOpsManager_NothingToDownload(t *testing.T) {
 		"",
 		"-0.2",
 		t.TempDir(), "",
-		func(server, log string) {
+		func(server, serverGroup, log string) {
 			fmt.Println(log)
 		},
-		func(server, status string) {
+		func(server, serverGroup, status string) {
 			fmt.Printf("NothingToDownload Server: %s, status: %s\n", server, status)
 			statResult = status
 		})
@@ -38,8 +38,8 @@ func TestEnvOpsManager_Download(t *testing.T) {
 		"",
 		"-0.2",
 		fmt.Sprintf("echo 'test_message' > %s/test.log", config.Servers[0].LogFolders[0]), "",
-		func(server, log string) {},
-		func(server, status string) {
+		func(server, serverGroup, log string) {},
+		func(server, serverGroup, status string) {
 			fmt.Printf("Execute command Server: %s, status: %s\n", server, status)
 			statResult = status
 		})
@@ -51,10 +51,10 @@ func TestEnvOpsManager_Download(t *testing.T) {
 		"",
 		"-0.2",
 		t.TempDir(), "",
-		func(server, log string) {
+		func(server, serverGroup, log string) {
 			fmt.Println(log)
 		},
-		func(server, status string) {
+		func(server, serverGroup, status string) {
 			fmt.Printf("Dowloading Server: %s, status: %s\n", server, status)
 			statResult = status
 		})

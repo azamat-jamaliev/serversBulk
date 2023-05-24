@@ -21,21 +21,22 @@ type CurrentFileForDownloading struct {
 }
 
 type FileSizeInfo struct {
-	FileName string
-	Server   string
-	FileSize int64
+	FileName    string
+	Server      string
+	ServerGroup string
+	FileSize    int64
 }
 
-var logHandler func(server, log string)
-var statusHandler func(server, status string)
+var logHandler func(server, serverGroup, log string)
+var statusHandler func(server, serverGroup, status string)
 
 func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 	taskName tasks.TaskType,
 	serversName,
 	modifTime,
 	cargo, cargo2 string,
-	newLogHandler func(server, log string),
-	newStatusHandler func(server, status string)) {
+	newLogHandler func(server, serverGroup, log string),
+	newStatusHandler func(server, serverGroup, status string)) {
 
 	logHandler = newLogHandler
 	statusHandler = newStatusHandler
@@ -97,17 +98,17 @@ func StartTaskForEnv(config *configProvider.ConfigEnvironmentType,
 
 }
 func PrintTask(task *tasks.ServerTask) {
-	statusHandler(task.Server, string(task.Status))
-	logHandler(task.Server, fmt.Sprintf("SERVER: %s NAME: %s\n STATUS: %s", task.Server, task.Type, task.Status))
+	statusHandler(task.Server, task.ConfigServer.Name, string(task.Status))
+	logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("SERVER: %s NAME: %s\n STATUS: %s", task.Server, task.Type, task.Status))
 
-	logHandler(task.Server, "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
+	logHandler(task.Server, task.ConfigServer.Name, "↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓")
 	if task.Status == tasks.Failed {
-		logHandler(task.Server, task.ExecuteCmd)
-		logHandler(task.Server, task.Error.Error())
+		logHandler(task.Server, task.ConfigServer.Name, task.ExecuteCmd)
+		logHandler(task.Server, task.ConfigServer.Name, task.Error.Error())
 	}
-	logHandler(task.Server, task.RemoteFileName)
-	logHandler(task.Server, task.Log)
-	logHandler(task.Server, "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
+	logHandler(task.Server, task.ConfigServer.Name, task.RemoteFileName)
+	logHandler(task.Server, task.ConfigServer.Name, task.Log)
+	logHandler(task.Server, task.ConfigServer.Name, "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
 }
 func taskForChannel(task *tasks.ServerTask, srvLog string, err error, newStatus tasks.TaskStatus, nextTask *tasks.TaskType) *tasks.ServerTask {
 	task.Log = srvLog
@@ -124,18 +125,18 @@ func taskForChannel(task *tasks.ServerTask, srvLog string, err error, newStatus 
 	return task
 }
 
-func fileNameFromServerIP(serverIp string) string {
-	return strings.ReplaceAll(serverIp, ".", "_")
+func fileNameFromServer(serverIp, serverGroup string) string {
+	return fmt.Sprintf("%s-%s", serverGroup, strings.ReplaceAll(serverIp, ".", "_"))
 }
 func printDownloadProgress(fSize FileSizeInfo) {
 	for {
 		fileStat, err := os.Stat(fSize.FileName)
 		if err != nil {
-			logHandler(fSize.Server, fmt.Sprintf("printDownloadProgress unable to get stat from file [%s]\nERROR:%v", fSize.FileName, err))
+			logHandler(fSize.Server, fSize.ServerGroup, fmt.Sprintf("printDownloadProgress unable to get stat from file [%s]\nERROR:%v", fSize.FileName, err))
 		}
 		persent := math.Round(100*100*float64(fileStat.Size())/float64(fSize.FileSize)) / 100
-		statusHandler(fSize.Server, fmt.Sprintf("downloaded ~%v%% [%s]", persent, fSize.FileName))
-		logHandler(fSize.Server, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, persent, fSize.FileName))
+		statusHandler(fSize.Server, fSize.ServerGroup, fmt.Sprintf("downloaded ~%v%% [%s]", persent, fSize.FileName))
+		logHandler(fSize.Server, fSize.ServerGroup, fmt.Sprintf("SRV: [%s] ~%v%% downloaded of the file [%s]  \n", fSize.Server, persent, fSize.FileName))
 		if persent > 95 {
 			break
 		}

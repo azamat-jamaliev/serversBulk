@@ -39,13 +39,13 @@ func awkInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 	strOutput := ""
 	strResult := ""
 
-	statusHandler(task.Server, "CONNECTING...")
-	logHandler(task.Server, fmt.Sprintf("connecting to server: [%s] to awk", task.Server))
+	statusHandler(task.Server, task.ConfigServer.Name, "CONNECTING...")
+	logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("connecting to server: [%s] to awk", task.Server))
 	sshAdv, err := sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 	var curSrvTime time.Time
 	if err == nil {
 		defer sshAdv.Close()
-		strOutput, err = executeWithConnection(sshAdv, task.Server, `date -u +"%Y-%m-%dT%H:%M:%S"`)
+		strOutput, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, `date -u +"%Y-%m-%dT%H:%M:%S"`)
 		//
 		if err == nil {
 			strOutput = strings.TrimSpace(strOutput)
@@ -54,17 +54,17 @@ func awkInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 				mtime := 0.01
 				mtime, err = strconv.ParseFloat(task.ModifTime, 32)
 				if err == nil {
-					logHandler(task.Server, fmt.Sprintf("mtime: [%v]", mtime))
+					logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("mtime: [%v]", mtime))
 					hours := math.Round(mtime*24 - 0.5)
 					fromTime := curSrvTime.Add(time.Duration(hours) * time.Hour)
-					logHandler(task.Server, fmt.Sprintf("fromTime: [%v]", fromTime))
+					logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("fromTime: [%v]", fromTime))
 
 					strAwk := fmt.Sprintf("awk  '/%s(%s)[^\\n]{0,60}(Error|ERROR)/{ print $0; f = 1 ;next } f; /(%s)/ { if (f == 1){ f = 0; print \"+++++++++++\"}}' {} ", charsBeforeDate, strRegExDates, strRegExDates)
 					task.ExecuteCmd = getFindExecForTask(task, strAwk)
-					strOutput, err = executeWithConnection(sshAdv, task.Server, task.ExecuteCmd)
+					strOutput, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, task.ExecuteCmd)
 
 					if err == nil {
-						statusHandler(task.Server, "FILTERING Results...")
+						statusHandler(task.Server, task.ConfigServer.Name, "FILTERING Results...")
 						strResult = filterLogLines(task.Server, strOutput, fromTime)
 					}
 				}

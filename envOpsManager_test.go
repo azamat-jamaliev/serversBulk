@@ -19,10 +19,10 @@ func TestEnvOpsManager_Upload(t *testing.T) {
 		"",
 		"-0.2",
 		"./test/local_test.json", "/var/tmp/",
-		func(server, log string) {
+		func(server, serverGroup, log string) {
 			fmt.Printf("Upload file to server: %s, Log:%s", server, log)
 		},
-		func(server, status string) {
+		func(server, serverGroup, status string) {
 			fmt.Printf("Upload file to server: %s, status: %s\n", server, status)
 			statResult = status
 		})
@@ -39,10 +39,10 @@ func TestEnvOpsManager_Grep(t *testing.T) {
 		"",
 		"-0.2",
 		"var", "",
-		func(server, log string) {
+		func(server, serverGroup, log string) {
 			fmt.Printf("GREP on server: %s, Log:%s", server, log)
 		},
-		func(server, status string) {
+		func(server, serverGroup, status string) {
 			fmt.Printf("GREP on server: %s, status: %s\n", server, status)
 			statResult = status
 		})

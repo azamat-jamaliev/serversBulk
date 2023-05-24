@@ -63,11 +63,11 @@ func TestEnvOpsManager_Awk(t *testing.T) {
 		"",
 		"-0.2",
 		"var", "",
-		func(server, log string) {
-			fmt.Printf("AWK on server: %s, Log:%s", server, log)
+		func(server, serverGroup, log string) {
+			fmt.Printf("AWK on server: %s-%s, Log:%s", serverGroup, server, log)
 		},
-		func(server, status string) {
-			fmt.Printf("AWK on server: %s, status: %s\n", server, status)
+		func(server, serverGroup, status string) {
+			fmt.Printf("AWK on server: %s-%s, status: %s\n", serverGroup, server, status)
 			statResult = status
 		})
 	if statResult != string(tasks.Finished) {

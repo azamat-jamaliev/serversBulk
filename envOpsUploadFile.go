@@ -33,7 +33,7 @@ func uploadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 	}
 	defer srcFile.Close()
 
-	logHandler(task.Server, fmt.Sprintf("UPLOADING file [%s] to [%s] on server [%s]\n", task.CommandCargo, task.RemoteFileName, task.Server))
+	logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("UPLOADING file [%s] to [%s] on server [%s]\n", task.CommandCargo, task.RemoteFileName, task.Server))
 	_, err = io.Copy(dstFile, srcFile)
 	output <- *taskForChannel(&task, fmt.Sprintf("File on remote server[%s]", destFilePath), err, tasks.Finished, nil)
 	return err
