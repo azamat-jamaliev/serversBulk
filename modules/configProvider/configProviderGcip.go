@@ -93,7 +93,11 @@ func getGetAnsibleSshServerYamlDetails(ansibleGlobalDir string) (map[string]SshS
 
 func GetAnsibleEnvironmentsConfig(ansibleDir, envPrefix string) ([]ConfigEnvironmentType, error) {
 	envs := []ConfigEnvironmentType{}
-	creds, err := getGetAnsibleSshServerYamlDetails(path.Join(ansibleDir, "00.global/group_vars/all"))
+	mainConfDir := path.Join(ansibleDir, "00.global/group_vars/all")
+	if !exists(mainConfDir) {
+		mainConfDir = path.Join(ansibleDir, "global/group_vars/all")
+	}
+	creds, err := getGetAnsibleSshServerYamlDetails(mainConfDir)
 	if err != nil {
 		return nil, err
 	}
@@ -114,36 +118,36 @@ func GetAnsibleEnvironmentsConfig(ansibleDir, envPrefix string) ([]ConfigEnviron
 
 				envHostDir := path.Join(ansibleDir, dir.Name(), "host_vars")
 				files, err := os.ReadDir(envHostDir)
-				if err != nil {
-					return envs, err
-				}
-				for _, f := range files {
-					if !f.IsDir() {
-						serverName := getServerTypeNameFromFile(f.Name())
-						if cred, ok := creds[serverName]; ok {
-							yamlFile, err := os.Open(path.Join(envHostDir, f.Name()))
+				if err == nil {
+					// return envs, err
+					for _, f := range files {
+						if !f.IsDir() {
+							serverName := getServerTypeNameFromFile(f.Name())
+							if cred, ok := creds[serverName]; ok {
+								yamlFile, err := os.Open(path.Join(envHostDir, f.Name()))
 
-							if err != nil {
-								return envs, err
-							}
-							bytes, _ := io.ReadAll(yamlFile)
-							srvIp := getValueFromYamlFile("ansible_host", string(bytes))
-							if len(srvIp) > 0 {
-								serv := ConfigServerType{
-									Name:           serverName,
-									IpAddresses:    []string{srvIp},
-									Login:          cred.Login,
-									Passowrd:       cred.Password,
-									LogFolders:     cred.LogFolders,
-									LogFilePattern: "*.log*",
+								if err == nil {
+
+									bytes, _ := io.ReadAll(yamlFile)
+									srvIp := getValueFromYamlFile("ansible_host", string(bytes))
+									if len(srvIp) > 0 {
+										serv := ConfigServerType{
+											Name:           serverName,
+											IpAddresses:    []string{srvIp},
+											Login:          cred.Login,
+											Passowrd:       cred.Password,
+											LogFolders:     cred.LogFolders,
+											LogFilePattern: "*.log*",
+										}
+										env.Servers = append(env.Servers, serv)
+									}
 								}
-								env.Servers = append(env.Servers, serv)
 							}
 						}
 					}
-				}
-				if len(env.Servers) > 0 {
-					envs = append(envs, env)
+					if len(env.Servers) > 0 {
+						envs = append(envs, env)
+					}
 				}
 			}
 		}

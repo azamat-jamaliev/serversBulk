@@ -17,7 +17,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const VERSION = "v1.0.6"
+const VERSION = "v1.0.10"
 
 var ServerLog, ServerStatus = map[string]string{"": ""}, map[string]string{"": ""}
 var muStatus sync.Mutex
@@ -107,12 +107,16 @@ func main() {
 		if err != nil {
 			log.Printf("[WARNING] cannot load Ansible config [./ansible-inventory] ERROR:[%s]\n", err)
 			envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(exePath, "CLASSIC"), "30.")
+			if err != nil {
+				log.Printf("[WARNING] cannot load Ansible config [./Ansible-Inventory] ERROR:[%s]\n", err)
+				envs, err = configProvider.GetAnsibleEnvironmentsConfig(path.Join(exePath, "Ansible-Inventory"), "")
+			}
 		}
 	}
 	if err == nil {
 		config.Environments = append(config.Environments, envs...)
 	} else {
-		log.Printf("[WARNING] cannot load Ansible config [./ansible-inventory] ERROR:[%s]\n", err)
+		log.Printf("[ERROR] in GetAnsibleEnvironmentsConfig cannot load Ansible config ERROR:[%s]\n", err)
 	}
 
 	app := tview.NewApplication()

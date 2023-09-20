@@ -60,7 +60,7 @@ func awkInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 					logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("fromTime: [%v]", fromTime))
 
 					strAwk := fmt.Sprintf("awk  '/%s(%s)[^\\n]{0,60}(Error|ERROR)/{ print $0; f = 1 ;next } f; /(%s)/ { if (f == 1){ f = 0; print \"+++++++++++\"}}' {} ", charsBeforeDate, strRegExDates, strRegExDates)
-					task.ExecuteCmd = getFindExecForTask(task, strAwk)
+					task.ExecuteCmd = getFindExecForTask(task, strAwk, "~")
 					strOutput, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, task.ExecuteCmd)
 
 					if err == nil {

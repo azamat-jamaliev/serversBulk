@@ -111,6 +111,7 @@ func PrintTask(task *tasks.ServerTask) {
 	logHandler(task.Server, task.ConfigServer.Name, "↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑")
 }
 func taskForChannel(task *tasks.ServerTask, srvLog string, err error, newStatus tasks.TaskStatus, nextTask *tasks.TaskType) *tasks.ServerTask {
+	log.Printf("[DEBUG] server=[%s] task.Type=[%s], task.CommandCargo=[%s], task.CommandCargo2[%s]", task.Server, task.Type, task.CommandCargo, task.CommandCargo2)
 	task.Log = srvLog
 	task.Error = err
 	if err != nil {
@@ -144,14 +145,14 @@ func printDownloadProgress(fSize FileSizeInfo) {
 	}
 }
 
-func getFindExecCommad(logFolders []string, logFilePattern, mTime, commandToExecute string) string {
+func getFindExecCommad(logFolders []string, logFilePattern, mTime, commandToExecute, homeFolder string) string {
 	// strGrep := fmt.Sprintf("grep --color=auto -H -A25 -B3 -i \"%s\" {}  \\;", task.CommandCargo)
-	cmd := "cd ~"
+	cmd := fmt.Sprintf("cd %s", homeFolder)
 	for _, folder := range logFolders {
 		cmd = fmt.Sprintf("%s; find %s -type f -iname \"%s\" -mtime %s -exec %s \\;", cmd, folder, logFilePattern, mTime, commandToExecute)
 	}
 	return cmd
 }
-func getFindExecForTask(task tasks.ServerTask, commandToExecute string) string {
-	return getFindExecCommad(task.ConfigServer.LogFolders, task.ConfigServer.LogFilePattern, task.ModifTime, commandToExecute)
+func getFindExecForTask(task tasks.ServerTask, commandToExecute, homeFolder string) string {
+	return getFindExecCommad(task.ConfigServer.LogFolders, task.ConfigServer.LogFilePattern, task.ModifTime, commandToExecute, homeFolder)
 }

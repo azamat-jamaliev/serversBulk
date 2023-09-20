@@ -17,7 +17,7 @@ func grepInLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) {
 		defer sshAdv.Close()
 		if err == nil {
 			strGrep := fmt.Sprintf("grep --color=auto -H -A25 -B3 -i \"%s\" {} ", task.CommandCargo)
-			task.ExecuteCmd = getFindExecForTask(task, strGrep)
+			task.ExecuteCmd = getFindExecForTask(task, strGrep, "~")
 			strOutput, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, task.ExecuteCmd)
 		}
 	}

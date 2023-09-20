@@ -22,29 +22,33 @@ func archiveLogs(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 		sshAdv, err = sshHelper.OpenSshAdvanced(&task.ConfigServer, task.Server)
 		if err == nil {
 			defer sshAdv.Close()
-
-			tarNamefile := fmt.Sprintf("~/%s.%s", fileNameFromServer(task.Server, task.ConfigServer.Name), "tar")
-			tarCmd := fmt.Sprintf("tar rvf %s {}", tarNamefile)
-			cmd := getFindExecForTask(task, tarCmd)
-
-			str, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, cmd)
-			logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("archiveLogs - cmd: [%s] - result: [%s] ", cmd, str))
-
+			homePath := "~"
+			homePath, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, "cd ~;pwd")
+			homePath = strings.TrimSpace(homePath)
 			if err == nil {
+				tarNamefile := fmt.Sprintf("%s/%s.%s", homePath, fileNameFromServer(task.Server, task.ConfigServer.Name), "tar")
+				tarCmd := fmt.Sprintf("tar rvf %s {}", tarNamefile)
+				cmd := getFindExecForTask(task, tarCmd, homePath)
 
-				cmd = fmt.Sprintf(`if [ ! -f %s ]; then
+				str, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, cmd)
+				logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("archiveLogs - cmd: [%s] - result: [%s] ", cmd, str))
+
+				if err == nil {
+
+					cmd = fmt.Sprintf(`if [ ! -f %s ]; then
 						echo "NOT_FOUND"
 					fi`, tarNamefile)
-				str, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, cmd)
-				str = strings.TrimSpace(str)
-				logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("archiveLogs - cmd: [%s] - result: [%s] ", cmd, str))
-				if str != "NOT_FOUND" {
-					nextTask := tasks.TypeArchiveGzip
-					task.RemoteFileName = tarNamefile
-					output <- *taskForChannel(&task, str, err, tasks.InProgress, &nextTask)
-					return nil
-				} else {
-					logHandler(task.Server, task.ConfigServer.Name, "No logs found for the filter")
+					str, err = executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, cmd)
+					str = strings.TrimSpace(str)
+					logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("archiveLogs - cmd: [%s] - result: [%s] ", cmd, str))
+					if str != "NOT_FOUND" {
+						nextTask := tasks.TypeArchiveGzip
+						task.RemoteFileName = tarNamefile
+						output <- *taskForChannel(&task, str, err, tasks.InProgress, &nextTask)
+						return nil
+					} else {
+						logHandler(task.Server, task.ConfigServer.Name, "No logs found for the filter")
+					}
 				}
 			}
 		}
@@ -78,8 +82,10 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 	defer close(fileProgress)
 
 	logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("Open file [%s] on server [%s]\n", task.RemoteFileName, task.Server))
-	sftpClient.RemoveDirectory(path.Dir(task.RemoteFileName))
-	srcFile, err := sftpClient.OpenFile(path.Base(task.RemoteFileName), (os.O_RDONLY))
+	// sftpClient.RemoveDirectory(path.Dir(task.RemoteFileName))
+	lsResult, _ := executeWithConnection(sshAdv, task.Server, task.ConfigServer.Name, fmt.Sprintf("ls -l %s", task.RemoteFileName))
+	logHandler(task.Server, task.ConfigServer.Name, fmt.Sprintf("Ls result lsResult=[%s] on server [%s]\n", lsResult, task.Server))
+	srcFile, err := sftpClient.OpenFile(task.RemoteFileName, (os.O_RDONLY))
 	if err != nil {
 		output <- *taskForChannel(&task, "downloadFile - Unable to open remote file", err, tasks.Failed, nil)
 		return err
@@ -116,7 +122,7 @@ func downloadFile(task tasks.ServerTask, output chan<- tasks.ServerTask) error {
 		return err
 	}
 
-	err = sftpClient.Remove(path.Base(task.RemoteFileName))
+	err = sftpClient.Remove(task.RemoteFileName)
 	output <- *taskForChannel(&task, "", err, tasks.Finished, nil)
 	return err
 }
